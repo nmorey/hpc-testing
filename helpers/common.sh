@@ -34,6 +34,15 @@ ip_addr_show_to_ipv6()
 {
 	 grep inet6 /dev/stdin  | sed -e 's/.*inet6 \([0-9a-f:]*\)\/\?.*$/\1/'
 }
+ip_addr_show_to_mac_ipv6()
+{
+    # Scrub the first 4 bytes and the 6 NULL bytes after fe80
+    # Then remove and readd the proper columns
+    grep link/infiniband | awk '{ print $2}' | \
+        sed -e 's/\([0-9a-f][0-9a-f]:\)\{4\}fe:80:\([0-9a-f][0-9a-f]:\)\{6\}/fe:80:/'  -e 's/://g'\
+            -e 's/\([0-9a-f]\{4\}\)/\1:/g' -e 's/:/::'/ -e 's/:$//'
+}
+
 ip_addr_show_to_dev()
 {
 	local ip=$1
