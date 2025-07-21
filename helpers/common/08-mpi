@@ -1,5 +1,6 @@
+#! /bin/bash
 # hpc-testing
-# Copyright (C) 2022 SUSE LLC
+# Copyright (C) 2025 SUSE LLC
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,6 +97,9 @@ mpi_get_flavors()
 		12.3|12.4|12.5)
 			flavours=$(mpi_filter_flavour $flavours openmpi2 openmpi3 openmpi4 openmpi5 mpich)
 			;;
+                2025*)
+			flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
+                        ;;
 		*)
 			# N/A
 			true

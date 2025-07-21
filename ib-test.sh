@@ -139,7 +139,18 @@ get_port $HOST2 2
 IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_ipv6)
 IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_ipv6)
 
+# Sometimes, there is nos default IPv6 address for some reason. Generate it using the MAC
+if [ "$IP6_1" == "" ]; then
+    IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_mac_ipv6)
+fi
+if [ "$IP6_2" == "" ]; then
+    IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_mac_ipv6)
+fi
+
 phase_1_2(){
+        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
+        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
+
 	juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
 	juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
 
