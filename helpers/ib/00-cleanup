@@ -40,6 +40,7 @@ do_reset_all_ports()
     for port_guid in $(ibstat -p); do
 	ibportstate -G $port_guid reset
     done
+    true
 }
 reset_all_ports()
 {
