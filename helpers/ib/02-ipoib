@@ -93,6 +93,8 @@ driver_resetup()
     juLog -name=h2_${testname} "${driver_func} $host2 ${ip2_setup}"
     if [ $DO_MAD -eq 1 ]; then
 	juLog -name=h1_${testname}_start_opensm "start_opensm $host1 -p 10"
+        # Give some time to OpenSM
+        sleep 10
     fi
 }
 test_ping()
