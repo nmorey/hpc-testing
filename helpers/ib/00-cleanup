@@ -44,7 +44,28 @@ do_reset_all_ports()
 }
 reset_all_ports()
 {
-	local host=$1
+    local host=$1
 
-	tp_fun $host do_reset_all_ports
+    tp_fun $host do_reset_all_ports
+}
+
+do_disable_unused_rdma_ports()
+{
+    local used_interface=$1
+
+    cd /sys/class/infiniband
+    for hca in *; do
+        if [ "$hca" == "$used_interface" ]; then
+            continue
+        fi
+        basename $(readlink -f "${hca}/device") > "${hca}/device/driver/unbind"
+        true
+    done
+}
+disable_unused_rdma_ports()
+{
+    local host=$1
+    local used_interface=$2
+
+    tp_fun $host do_disable_unused_rdma_ports $used_interface
 }

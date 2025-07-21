@@ -148,6 +148,9 @@ if [ "$IP6_2" == "" ]; then
 fi
 
 phase_1_2(){
+        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
+        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
+
 	juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
 	juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
 
