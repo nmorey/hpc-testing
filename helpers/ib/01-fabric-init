@@ -38,34 +38,36 @@ start_opensm()
 }
 
 extract_port_info(){
+    local selected_hca=$1
     local boards board
-    local port_count port
+    # Hardcode port id. Script not really supports anything !=1 and it never happens
+    local port=1
     local status res
     local pci_id
     local netif netif_pci_id ipoib_if
     local guid lid sysguid
     boards=$(/usr/sbin/ibstat -l | sort -V)
     for board in $boards; do
-	port_count=$(/usr/sbin/ibstat $board -p | wc -l)
-	for port in $(seq 1 $port_count); do
-		res=$(/usr/sbin/ibstat $board $port)
-		status=$(echo "$res" | grep "State:" | awk "{print \$NF}")
-		if [ "$status" == "Active" ]; then
-			pci_id=$(basename $(readlink -f /sys/class/infiniband/mlx5_0/device))
-			for netif in $(ls /sys/class/net/); do
-				netif_pci_id=$(basename $(readlink -f /sys/class/net/$netif/device))
-				if [ "$pci_id" == "$netif_pci_id" ]; then
-				   ipoib_if=$netif
-				   break
-				fi
-			done
-			guid=$(echo "$res" | grep "Port GUID:" | awk "{print \$NF}")
-			lid=$(echo "$res" | grep "Base lid:" | awk "{print \$NF}")
-			sysguid=$(ibstat $board | grep "System image GUID:" | awk "{print \$NF}")
-			echo "$ipoib_if $guid $lid $board $port $sysguid"
-			return 0;
-		fi;
-	done;
+        if [ "$selected_hca" != "" -a "$selected_hca" != "$board" ]; then
+            continue
+        fi
+	res=$(/usr/sbin/ibstat $board $port)
+	status=$(echo "$res" | grep "State:" | awk "{print \$NF}")
+	if [ "$status" == "Active" -o "$selected_hca" != "" ]; then
+	    pci_id=$(basename $(readlink -f /sys/class/infiniband/${board}/device))
+	    for netif in $(ls /sys/class/net/); do
+		netif_pci_id=$(basename $(readlink -f /sys/class/net/${netif}/device))
+		if [ "$pci_id" == "$netif_pci_id" ]; then
+		    ipoib_if=$netif
+		    break
+		fi
+	    done
+	    guid=$(echo "$res" | grep "Port GUID:" | awk "{print \$NF}")
+	    lid=$(echo "$res" | grep "Base lid:" | awk "{print \$NF}")
+	    sysguid=$(ibstat $board | grep "System image GUID:" | awk "{print \$NF}")
+	    echo "$ipoib_if $guid $lid $board $port $sysguid"
+	    return 0;
+	fi;
     done
 }
 
@@ -73,13 +75,18 @@ get_port()
 {
 	local host=$1
 	local host_id=$2
+        local selected_hca=$3
         local res
 
         local data
-	res=$(tpq_fun $host extract_port_info)
+	res=$(tpq_fun $host extract_port_info "$selected_hca")
 
 	if [ "$res" == "" ]; then
+            if [ "$selected_hca" != ""  ]; then
+		fatal_error "Could not fint HCA $selected_hca on $host"
+            else
 		fatal_error "Failed to find an active port on $host"
+            fi
 	fi
 
         read -a array <<< "$res"
