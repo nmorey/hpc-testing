@@ -47,21 +47,17 @@ set_ipoib_down()
     tp $host "ip link set dev $port down &&
 	   		  ip -4 addr flush $port"
 }
-disable_enhanced()
+disable_mlx5_enhanced()
 {
     local host=$1
     tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=0"
 }
-enable_enhanced()
+enable_mlx5_enhanced()
 {
     local host=$1
     tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=1"
 }
-reload_mlx5_ib()
-{
-    local host=$1
-    tp $host "rmmod mlx5_ib && modprobe mlx5_ib"
-}
+
 driver_resetup()
 {
     local testname=$1
@@ -180,7 +176,7 @@ ipoib_run_tests()
 	fi
 	reload_driver=1
 
-	driver_resetup "disable_enhanced" disable_enhanced $HOST1 "" "" "" $HOST2 "" "" ""
+	driver_resetup "disable_mlx5_enhanced" disable_mlx5_enhanced $HOST1 "" "" "" $HOST2 "" "" ""
     fi
 
     for mode in $(echo $IPOIB_MODES | sed -e 's/,/ /g'); do
@@ -206,6 +202,6 @@ ipoib_run_tests()
     done
     if [ $reload_driver -eq 1 ]; then
 	# Put the driver back in enhanced mode and make sure IPoIB Ifs are reconfigured
-	driver_resetup "enable_enhanced" enable_enhanced $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
+	driver_resetup "enable_mlx5_enhanced" enable_mlx5_enhanced $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
     fi
 }
