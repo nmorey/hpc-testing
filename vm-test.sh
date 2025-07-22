@@ -54,23 +54,17 @@ common_check
 set_properties $HOST1
 set_properties $HOST2
 
-remove_all_mods_host()
-{
-    local host=$1
-    tpq $host "rmmod rdma_rxe siw mlx5_ib mlx5_core 2>/dev/null || true"
-    disable_unused_rdma_ports $host
-}
-
 remove_all_mods()
 {
-    remove_all_mods_host $HOST1
-    remove_all_mods_host $HOST2
+    remove_kmods $HOST1
+    remove_kmods $HOST2
 }
+
 test_ib()
 {
     remove_all_mods
-    tpq $HOST1 "modprobe mlx5_ib"
-    tpq $HOST2 "modprobe mlx5_ib"
+    load_kmods $HOST1
+    load_kmods $HOST2
 
     # Wait for IP if to get up
     sleep 3
