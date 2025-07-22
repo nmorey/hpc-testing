@@ -129,63 +129,7 @@ juLog_fatal -name=h2_check_ipv6 "[[ \"$IP6_2\" != \"\" ]]"
 # Phase 2: IPoIB
 #
 #########################
-phase_2(){
-	local reload_driver=0
-
-	driver_resetup "reload_mlx5_driver" reload_mlx5_ib $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
-
-	# Check if both cards support connected mode
-	if ! (is_connected_supported $HOST1 $IPPORT1 && is_connected_supported $HOST2 $IPPORT2); then
-	   #  We are using a mlx5 card with enhanced mode
-	   # Test if first then if possible reload the driver  with enhanced mode disabled
-	   # so we can testout datagram and connected
-		for size in 511 1025 2044 8192 32768 65492; do
-			juLog -name=h1_enhanced_ping_$size "test_ping $HOST1 $IP2 $size"
-			juLog -name=h2_enhanced_ping_$size "test_ping $HOST2 $IP1 $size"
-			juLog -name=h1_enhanced_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
-			juLog -name=h2_enhanced_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
-		done
-
-		juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
-		juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
-
-	   if !(is_enhanced_mode_togglable $HOST1 && is_enhanced_mode_togglable $HOST2); then
-		   # No parameter to disable it, do not test out connected/datagram
-		   juLog -name=ipoib_skipping_connected 'echo "WARNING: Disabling datagram/connected tests as it is not supported by all HCAs (enhanced mode enabled and not togglable)"'
-		   return 0
-	   fi
-	   reload_driver=1
-
-	   driver_resetup "disable_enhanced" disable_enhanced $HOST1 "" "" "" $HOST2 "" "" ""
-	fi
-
-	for mode in $(echo $IPOIB_MODES | sed -e 's/,/ /g'); do
-		juLog_fatal -name=h1_${mode}_ip_mode "set_ipoib_mode $HOST1 $IPPORT1 $mode"
-		juLog_fatal -name=h1_${mode}_ip_down "set_ipoib_down $HOST1 $IPPORT1"
-		juLog_fatal -name=h1_${mode}_ip_up   "set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
-
-		juLog_fatal -name=h2_${mode}_ip_mode "set_ipoib_mode $HOST2 $IPPORT2 $mode"
-		juLog_fatal -name=h2_${mode}_ip_down "set_ipoib_down $HOST2 $IPPORT2"
-		juLog_fatal -name=h2_${mode}_ip_up   "set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
-
-		for size in 511 1025 2044 8192 32768 65492; do
-		    juLog -name=h1_${mode}_ping_$size "test_ping $HOST1 $IP2 $size"
-		    juLog -name=h2_${mode}_ping_$size "test_ping $HOST2 $IP1 $size"
-		    juLog -name=h1_${mode}_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
-		    juLog -name=h2_${mode}_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
-		done
-
-		# TODO: Add ping tests that are expected to fail
-
-		juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
-		juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
-	done
-	if [ $reload_driver -eq 1 ]; then
-	    # Put the driver back in enhanced mode and make sure IPoIB Ifs are reconfigured
-	   driver_resetup "enable_enhanced" enable_enhanced $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
-	fi
-}
-run_phase 2 phase_2 "IPoIB"
+run_phase 2 ipoib_run_tests "IPoIB"
 
 #########################
 #
