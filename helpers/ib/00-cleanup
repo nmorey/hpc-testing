@@ -49,19 +49,6 @@ reset_all_ports()
     tp_fun $host do_reset_all_ports
 }
 
-do_load_kmods(){
-    set +e
-    modprobe mlx4_ib
-    modprobe mlx5_ib
-    modprobe bnxt_re
-    modprobe qedr
-}
-load_kmods(){
-    local host=$1
-
-    tp_fun $host do_load_kmods
-}
-
 phase_0(){
     juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
     juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"

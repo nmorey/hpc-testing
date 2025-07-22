@@ -100,3 +100,39 @@ get_common_package_list()
     esac
     echo $PACKAGE_LIST " "
 }
+
+KMOD_LIST="ib_ipoib rdma_rxe siw mlx5_ib mlx5_fwctl mlx5_core mlx4_ib bnxt_re qedr"
+do_remove_kmods()
+{
+    local mod
+    for mod in $KMOD_LIST; do
+        rmmod $mod 2>/dev/null || true
+    done
+    true
+}
+remove_kmods()
+{
+    local host=$1
+
+    tp_fun $host do_remove_kmods
+}
+
+do_load_kmods(){
+    local mod
+    set +e
+    for mod in $KMOD_LIST; do
+        modprobe $mod
+    done
+}
+load_kmods(){
+    local host=$1
+
+    tp_fun $host do_load_kmods
+}
+
+reload_kmods(){
+    local host=$1
+
+    remove_kmods $host
+    load_kmods $host
+}
