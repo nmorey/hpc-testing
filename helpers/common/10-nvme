@@ -53,7 +53,7 @@ nvme_run_client()
 {
     local server_ip=$1
     local block_device
-
+    local log
     set +e
     umount /tmp/srp-hpc-test 2>/dev/null
     rm -Rf /tmp/srp-hpc-test 2>/dev/null
@@ -63,8 +63,10 @@ nvme_run_client()
     mkdir /tmp/srp-hpc-test
     rm -f /etc/nvme/hostid
     nvme discover -t rdma -a "$server_ip" -s 4420
-    nvme connect -t rdma -n testnqn -a "$server_ip" -s 4420
-    block_device=$(lsblk | grep nvme | awk "{ print \$1}")
+    log=$(nvme connect -t rdma -n testnqn -a "$server_ip" -s 4420)
+    echo $log
+    sleep 1
+    block_device=$(lsblk | grep $(echo "$log"  | awk '{ print $NF }') | awk "{ print \$1}")
     echo $block_device
     mount /dev/$block_device /tmp/srp-hpc-test
     cp -R /tmp/srp-hpc-test/input /tmp/srp-hpc-test/output
