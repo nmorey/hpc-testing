@@ -133,7 +133,7 @@ juLog() {
   if [ $err = 0 ]; then
       failure=""
   else
-      failure="<failure type=\"ScriptError\" message=\"$name failed: $cmd\"></failure>"
+      failure="<failure type=\"ScriptError\" message=\"$name failed\"></failure>"
       errored_tests="${errored_tests} - $name\n"
   fi
   tcerr=""
