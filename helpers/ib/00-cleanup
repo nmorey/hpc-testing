@@ -53,8 +53,10 @@ phase_0(){
     juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
     juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-    juLog_fatal -name=h1_load_kmods "load_kmods $HOST1"
-    juLog_fatal -name=h2_load_kmods "load_kmods $HOST2"
+    if [ $KMOD_RELOAD -eq 1 ]; then
+        juLog_fatal -name=h1_reload_kmods "reload_kmods $HOST1"
+        juLog_fatal -name=h2_reload_kmods "reload_kmods $HOST2"
+    fi
 
     juLog -name=h1_kill_opensm "kill_opensm $HOST1"
     juLog -name=h2_kill_opensm "kill_opensm $HOST2"

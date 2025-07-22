@@ -19,6 +19,7 @@ DEFAULT_IPOIB_MODES="connected,datagram"
 
 export IPOIB_MODES=${IPOIB_MODES:-$DEFAULT_IPOIB_MODES}
 export DO_MAD=1
+export KMOD_RELOAD=0
 # Unset global variables used later to describe HCA, ports and IPS
 export IP1 IP2 IP6_1 IP6_2
 export IPPORT1 IPPORT2
@@ -48,6 +49,8 @@ usage(){
     echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
     echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
     echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
+    echo "  -k, --reload-kmods             Force a full kmod unload/reload. Should only be used when running"
+    echo "                                 multiple tests consecutively"
 }
 
 while [ $# -ne 0 ]; do
@@ -94,6 +97,9 @@ while [ $# -ne 0 ]; do
 	-n|--no-mad)
 	    DO_MAD=0
 	    ;;
+        -k|--reload-kmods)
+            KMOD_RELOAD=1
+            ;;
 	*)
 	    fatal_error "Unknow argument $1"
 	    ;;
