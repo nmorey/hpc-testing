@@ -63,3 +63,29 @@ get_srdma_port()
 
 	echo "[SUCCESS] Host $host uses interface $rdma_if."
 }
+
+do_disable_unused_rdma_ports()
+{
+    local used_interface=$1
+
+    cd /sys/class/infiniband
+    for hca in *; do
+        if [ "$hca" == "$used_interface" ]; then
+            continue
+        fi
+        if [ -e "${hca}/device" ]; then
+            basename $(readlink -f "${hca}/device") > "${hca}/device/driver/unbind"
+        else
+            rdma link del "${hca}"
+        fi
+    done
+    true
+}
+
+disable_unused_rdma_ports()
+{
+    local host=$1
+    local used_interface=$2
+
+    tp_fun $host do_disable_unused_rdma_ports $used_interface
+}
