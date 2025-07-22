@@ -85,25 +85,6 @@ juLogSetProperty host2.name $HOST2
 # - Reset everything needed to mimic an after-reboot run
 #
 #########################
-phase_0(){
-	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
-	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
-
-	juLog -name=h1_kill_opensm "kill_opensm $HOST1"
-	juLog -name=h2_kill_opensm "kill_opensm $HOST2"
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
-		juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
-
-		# We need to sleep a little bit here to let the port reset
-		sleep 5
-	fi
-
-	juLog -name=h1_firewall_down "firewall_down $HOST1"
-	juLog -name=h2_firewall_down "firewall_down $HOST2"
-
-}
 run_phase 0 phase_0 "State Cleanup"
 
 set_properties $HOST1

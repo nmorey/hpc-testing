@@ -69,3 +69,23 @@ disable_unused_rdma_ports()
 
     tp_fun $host do_disable_unused_rdma_ports $used_interface
 }
+
+phase_0(){
+	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
+	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
+
+	juLog -name=h1_kill_opensm "kill_opensm $HOST1"
+	juLog -name=h2_kill_opensm "kill_opensm $HOST2"
+
+	if [ $DO_MAD -eq 1 ]; then
+		juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
+		juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
+
+		# We need to sleep a little bit here to let the port reset
+		sleep 5
+	fi
+
+	juLog -name=h1_firewall_down "firewall_down $HOST1"
+	juLog -name=h2_firewall_down "firewall_down $HOST2"
+
+}
