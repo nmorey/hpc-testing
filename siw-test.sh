@@ -92,11 +92,9 @@ phase_0(){
 	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
 	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-	juLog_fatal -name=h1_existing_hw_rdma "check_existing_hw_rdma_if $HOST1"
-	juLog_fatal -name=h2_existing__hwrdma "check_existing_hw_rdma_if $HOST2"
-
-	juLog_fatal -name=h1_existing_hw_rdma "check_existing_sw_rdma_if $HOST1 iwarp"
-	juLog_fatal -name=h2_existing__hwrdma "check_existing_sw_rdma_if $HOST2 iwarp"
+        # Remove all RDMA ports first just to be sure
+        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1"
+        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2"
 
 	juLog -name=h1_firewall_down "firewall_down $HOST1"
 	juLog -name=h2_firewall_down "firewall_down $HOST2"
@@ -165,18 +163,10 @@ run_phase 5 phase_5 "NFSoRDMA"
 
 #########################
 #
+# Too much unsupported tests
 # Phase 8: MPI
 #
 #########################
-phase_8(){
-	FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
-	# Right now, it seems only OpenMPI2 works fine with SIW
-	FLAVOURS=$(mpi_filter_flavour $FLAVOURS mpich mvapich2 openmpi3 openmpi4 openmpi)
-	for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
-		juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2
-	done
-}
-run_phase 8 phase_8 "MPI"
 
 #########################
 #

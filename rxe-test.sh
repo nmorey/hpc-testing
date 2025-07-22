@@ -92,11 +92,9 @@ phase_0(){
 	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
 	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-	juLog_fatal -name=h1_existing_hw_rdma "check_existing_hw_rdma_if $HOST1"
-	juLog_fatal -name=h2_existing_hw_rdma "check_existing_hw_rdma_if $HOST2"
-
-	juLog_fatal -name=h1_existing_hw_rdma "check_existing_sw_rdma_if $HOST1 rxe"
-	juLog_fatal -name=h2_existing_hw_rdma "check_existing_sw_rdma_if $HOST2 rxe"
+        # Remove all RDMA ports first just to be sure
+        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1"
+        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2"
 
 	juLog -name=h1_firewall_down "firewall_down $HOST1"
 	juLog -name=h2_firewall_down "firewall_down $HOST2"
@@ -182,7 +180,7 @@ run_phase 7 phase_7 "RDMA/Verbs"
 #########################
 phase_8(){
 	FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
-	# Right now, it seems only OpenMPI2 works fine with RXE
+	# Right now, it seems only OpenMPI[25] works fine with RXE
 	FLAVOURS=$(mpi_filter_flavour $FLAVOURS mpich mvapich2 openmpi3 openmpi4 openmpi)
 	for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
 		juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2

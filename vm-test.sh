@@ -58,8 +58,7 @@ remove_all_mods_host()
 {
 	local host=$1
 	tpq $host "rmmod rdma_rxe siw mlx5_ib mlx5_core 2>/dev/null || true"
-	check_existing_hw_rdma_if $host
-	check_existing_sw_rdma_if $host randomnamethatcannotbeardmainterfacetype
+	disable_unused_rdma_ports $host
 }
 
 remove_all_mods()
@@ -82,7 +81,7 @@ test_ib()
 	IB_IF2=$(tpq $HOST2 "ip -br link show type ipoib" | head -n 1 | awk '{print $1}')
 	IB_IP2=$(tpq $HOST2 "ip addr show $IB_IF2" | ip_addr_show_to_ip)
 
-	tp $HOST1 "cd $TESTDIR; ./ib-test.sh --no-mad --in-vm --ip1 $IB_IP1 --ip2 $IB_IP2 $HOST1 $HOST2 \
+	tp $HOST1 "cd $TESTDIR; ./ib-test.sh --no-mad --in-vm $HOST1 $HOST2 \
    -s $START_PHASE -e $END_PHASE -M $MPI_FLAVOURS"
 }
 
@@ -91,7 +90,7 @@ test_rxe()
 	remove_all_mods
 	tpq $HOST1 "modprobe rdma_rxe"
 	tpq $HOST2 "modprobe rdma_rxe"
-	tp $HOST1 "cd $TESTDIR; ./rxe-test.sh  --in-vm $HOST1 $HOST2"
+	tp $HOST1 "cd $TESTDIR; ./rxe-test.sh  --in-vm $HOST1 $HOST2  -M $MPI_FLAVOURS"
 }
 
 test_siw()
@@ -99,7 +98,7 @@ test_siw()
 	remove_all_mods
 	tpq $HOST1 "modprobe siw"
 	tpq $HOST2 "modprobe siw"
-	tp $HOST1 "cd $TESTDIR; ./siw-test.sh  --in-vm $HOST1 $HOST2"
+	tp $HOST1 "cd $TESTDIR; ./siw-test.sh  --in-vm $HOST1 $HOST2  -M $MPI_FLAVOURS"
 }
 
 VERBOSE=1
