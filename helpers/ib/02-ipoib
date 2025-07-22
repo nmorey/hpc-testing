@@ -89,8 +89,8 @@ driver_resetup()
     if [ $DO_MAD -eq 1 ]; then
 	juLog -name=h1_${testname}_opensm "kill_opensm $host1"
     fi
-    juLog -name=h1_${testname} "${driver_func} $host1 ${ip1_setup}"
-    juLog -name=h2_${testname} "${driver_func} $host2 ${ip2_setup}"
+    juLog -name=h1_${testname} "${driver_func} $host1 && nmcli_disable $host1 $ipport1 ${ip1_setup}"
+    juLog -name=h2_${testname} "${driver_func} $host2 && nmcli_disable $host2 $ipport2 ${ip2_setup}"
     if [ $DO_MAD -eq 1 ]; then
 	juLog -name=h1_${testname}_start_opensm "start_opensm $host1 -p 10"
         # Give some time to OpenSM
