@@ -81,5 +81,5 @@ test_nfs()
 
     # Cleanup
     tp $client "umount -f /tmp/RAM"
-    tp $server nfs_server_clean
+    tp_fun $server nfs_server_clean
 }
