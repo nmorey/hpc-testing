@@ -69,7 +69,7 @@ do_disable_unused_rdma_ports()
     local used_interface=$1
 
     cd /sys/class/infiniband
-    for hca in *; do
+    for hca in $(ls); do
         if [ "$hca" == "$used_interface" ]; then
             continue
         fi
