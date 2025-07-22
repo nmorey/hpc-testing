@@ -152,7 +152,9 @@ ipoib_run_tests()
 {
     local reload_driver=0
 
-    driver_resetup "reload_mlx5_driver" reload_mlx5_ib $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
+    # Not necesseraly needed but in case we are running multiple tests in a row,
+    # make sure the driver is in a pristine state
+    driver_resetup "reload_kmods" reload_kmods $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
 
     # Check if both cards support connected mode
     if ! (is_connected_supported $HOST1 $IPPORT1 && is_connected_supported $HOST2 $IPPORT2); then
