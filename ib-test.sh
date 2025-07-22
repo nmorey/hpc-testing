@@ -94,23 +94,13 @@ juLogSetProperty $HOST2.ib_ip $IP2
 
 #########################
 #
-# Phase 1: Fabric init
+# Phase 1-0: Fabric init
 # - Start demons (opensm, rdma-ndd)
 # - SSH known key setup to as some tests will fail if
 #   hosts do not know each other
 # - Device status check
 #
 #########################
-phase_1_1(){
-	juLog -name=h1_rdma_ndd "setup_rdma_ndd $HOST1"
-	juLog -name=h2_rdma_ndd "setup_rdma_ndd $HOST2"
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_openSM_start "start_opensm $HOST1 -p 10"
-		# Leave some time for openSM to bring the link up
-		sleep 10
-	fi
-}
 run_phase 1 phase_1_1 "Fabric init (1/2)"
 
 # Do not wrap these as they export needed variables

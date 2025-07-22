@@ -133,3 +133,14 @@ test_nodedesc()
 
 	fi
 }
+
+phase_1_1(){
+	juLog -name=h1_rdma_ndd "setup_rdma_ndd $HOST1"
+	juLog -name=h2_rdma_ndd "setup_rdma_ndd $HOST2"
+
+	if [ $DO_MAD -eq 1 ]; then
+		juLog_fatal -name=h1_openSM_start "start_opensm $HOST1 -p 10"
+		# Leave some time for openSM to bring the link up
+		sleep 10
+	fi
+}
