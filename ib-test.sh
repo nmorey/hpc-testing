@@ -15,14 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DEFAULT_IP1=192.168.0.1
-DEFAULT_IP2=192.168.0.2
 DEFAULT_IPOIB_MODES="connected,datagram"
 
 export IPOIB_MODES=${IPOIB_MODES:-$DEFAULT_IPOIB_MODES}
-export IP1=${IP1:-$DEFAULT_IP1}
-export IP2=${IP2:-$DEFAULT_IP2}
 export DO_MAD=1
+# Unset global variables used later to describe HCA, ports and IPS
+export IP1 IP2 IP6_1 IP6_2
+export IPPORT1 IPPORT2
+export GUID1 GUID2
+export LID1 LID2
+export HCA1 HCA2
+export IBPORT1 IBPORT2
+export SYSGUID1 SYSGUID2
 
 source $(dirname $0)/helpers/common.sh
 load_helpers $(dirname $0) "common"
@@ -32,12 +36,18 @@ usage(){
 	echo "Usage: ${0} [options] <host1> <host2>"
 	echo "Options:"
 	common_usage
-	echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is $DEFAULT_IP1)"
-	echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is $DEFAULT_IP2)"
+	echo "Interface configuration:"
+	echo "      --hca1 <hca name>          Select this specific HCA on host1 (default is first active)"
+	echo "      --hca2 <hca name>          Select this specific HCA on host2 (default is first active)"
+	echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is current address)"
+	echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is current address)"
+	echo "      --ip6-1 <ipv6>             IPv6 for IPoIB on host1 (default is current address)"
+	echo "      --ip6-2 <ipv6>             IPv6 for IPoIB on host2 (default is current address)"
+	echo "Test flags:"
 	echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
 	echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
 	echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
-	echo "  -n, --no-mad                   Disable test that requires MAD support. Needed for testing over SR-IOV"
+	echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
 }
 
 while [ $# -ne 0 ]; do
@@ -49,12 +59,28 @@ while [ $# -ne 0 ]; do
 	fi
 
 	case $1 in
+		--hca1)
+			HCA1=$2
+			shift
+			;;
+		--hca2)
+			HCA2=$2
+			shift
+			;;
 		--ip1)
 			IP1=$2
 			shift
 			;;
 		--ip2)
 			IP2=$2
+			shift
+			;;
+		--ip6-1)
+			IP6_1=$2
+			shift
+			;;
+		--ip6-2)
+			IP6_2=$2
 			shift
 			;;
 		-M|--mpi)
