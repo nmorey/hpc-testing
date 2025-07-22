@@ -118,34 +118,6 @@ if [ "$IP6_2" == "" ]; then
     IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_mac_ipv6)
 fi
 
-phase_1_2(){
-        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
-        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
-
-	juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
-	juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
-
-	juLog_fatal -name=h1_ip_setup   "set_ipoib_down $HOST1 $IPPORT1; set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
-	juLog_fatal -name=h2_ip_setup   "set_ipoib_down $HOST2 $IPPORT2; set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
-
-	# Let IP settle down or SSH key setup might fail
-	sleep 5
-
-	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
-	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
-
-	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
-	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_ibdiagnet test_ibdiagnet $HOST1
-		juLog_fatal -name=h2_ibdiagnet test_ibdiagnet $HOST2
-
-		juLog -name=h1_test_nodedesc "test_nodedesc $HOST1 $GUID1 $HCA1"
-		juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
-	fi
-}
-
 run_phase 1 phase_1_2 "Fabric init (2/2)"
 
 

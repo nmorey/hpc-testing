@@ -144,3 +144,23 @@ phase_1_1(){
 		sleep 10
 	fi
 }
+
+phase_1_2(){
+
+	# Let IP settle down or SSH key setup might fail
+	sleep 5
+
+	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
+	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
+
+	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
+	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
+
+	if [ $DO_MAD -eq 1 ]; then
+		juLog_fatal -name=h1_ibdiagnet test_ibdiagnet $HOST1
+		juLog_fatal -name=h2_ibdiagnet test_ibdiagnet $HOST2
+
+		juLog -name=h1_test_nodedesc "test_nodedesc $HOST1 $GUID1 $HCA1"
+		juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
+	fi
+}
