@@ -171,3 +171,74 @@ phase_1_2(){
 		juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
 	fi
 }
+
+check_ip_configuration(){
+    local host=$1
+    local host_id=$2
+    local ipport=$3
+    local ip=$4
+    local ip6=$5
+
+    # Check the new settings really are applied
+    cur_ip4=$(tpq "$host" "ip addr show $ipport" | ip_addr_show_to_ip)
+    cur_ip6=$(tpq "$host" "ip addr show $ipport" | ip_addr_show_to_ipv6)
+    juLog_fatal -name="h${host_id}_check_current_ipv4" "[[ \"$ip\" == \"$cur_ip4\" ]]"
+    juLog_fatal -name="h${host_id}_check_current_ipv6" "[[ \"$ip6\" == \"$cur_ip6\" ]]"
+}
+
+ipoib_setup_one(){
+    local host=$1
+    local host_id=$2
+    local ipport=$3
+    local ip=$4
+    local ip6=$5
+
+    # Get IPv4 IPs or configure them if requested
+    if [ "$ip" == "" ]; then
+        ip=$(tpq "$host" "ip addr show $ipport" | ip_addr_show_to_ip)
+    fi
+    juLog_fatal -name="h${host_id}_check_ipv4_found" "[[ \"$ip\" != \"\" ]]"
+
+    #Get IPv6 IPs if needed or configure them if requested
+    if [ "$ip6" == "" ]; then
+        ip6=$(tpq "$host" "ip addr show $ipport" | ip_addr_show_to_ipv6)
+        # Sometimes, there is nos default IPv6 address for some reason. Generate it using the MAC
+        if [ "$ip6" == "" ]; then
+            ip6=$(tpq "$host" "ip addr show $ipport" | ip_addr_show_to_mac_ipv6)
+        fi
+    fi
+    juLog_fatal -name="h${host_id}_check_ipv6_found" "[[ \"$ip6\" != \"\" ]]"
+
+    eval export IP$host_id=$ip
+    eval export IP6_$host_id=$ip6
+
+}
+
+interface_setup(){
+    local set_ip1=0
+    local set_ip2=0
+
+    get_port $HOST1 1 $HCA1
+    ipoib_setup_one $HOST1 1 $IPPORT1 $IP1 $IP6_1
+
+    get_port $HOST2 2 $HCA2
+    ipoib_setup_one $HOST2 2 $IPPORT2 $IP2 $IP6_2
+
+    juLogSetProperty "$HOST1.ib_ip" "$IP1"
+    juLogSetProperty "$HOST2.ib_ip" "$IP2"
+    juLogSetProperty "$HOST1.ib_ip6" "$IP6_1"
+    juLogSetProperty "$HOST2.ib_ip6" "$IP6_2"
+
+    juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
+    juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
+
+    juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
+    juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
+
+    juLog_fatal -name=h1_ip_setup   "set_ipoib_down $HOST1 $IPPORT1; set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
+    juLog_fatal -name=h2_ip_setup   "set_ipoib_down $HOST2 $IPPORT2; set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
+
+    check_ip_configuration $HOST1 1 $IPPORT1 $IP1 $IP6_1
+    check_ip_configuration $HOST2 2 $IPPORT2 $IP2 $IP6_2
+
+}

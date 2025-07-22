@@ -89,40 +89,35 @@ run_phase 0 phase_0 "State Cleanup"
 
 set_properties $HOST1
 set_properties $HOST2
-juLogSetProperty $HOST1.ib_ip $IP1
-juLogSetProperty $HOST2.ib_ip $IP2
 
 #########################
 #
 # Phase 1-0: Fabric init
 # - Start demons (opensm, rdma-ndd)
+#
+#########################
+run_phase 1 phase_1_1 "Fabric init (1/2)"
+
+
+#########################
+#
+# Interface setup
+# - Find an active HCA if none was requested
+# - Extract HCA informations
+# - Extract IPv4 and IPv6 addresses if needed
+#
+#########################
+interface_setup
+
+#########################
+#
+# Phase 1-2: Fabric init
 # - SSH known key setup to as some tests will fail if
 #   hosts do not know each other
 # - Device status check
 #
 #########################
-run_phase 1 phase_1_1 "Fabric init (1/2)"
-
-# Do not wrap these as they export needed variables
-get_port $HOST1 1
-get_port $HOST2 2
-#Get IPv6 IPs
-IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_ipv6)
-IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_ipv6)
-
-# Sometimes, there is nos default IPv6 address for some reason. Generate it using the MAC
-if [ "$IP6_1" == "" ]; then
-    IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_mac_ipv6)
-fi
-if [ "$IP6_2" == "" ]; then
-    IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_mac_ipv6)
-fi
-
 run_phase 1 phase_1_2 "Fabric init (2/2)"
-
-
-juLog_fatal -name=h1_check_ipv6 "[[ \"$IP6_1\" != \"\" ]]"
-juLog_fatal -name=h2_check_ipv6 "[[ \"$IP6_2\" != \"\" ]]"
 
 #########################
 #
