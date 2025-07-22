@@ -33,6 +33,7 @@ export MPI_FLAVOURS=${MPI_FLAVOURS:-$DEFAULT_MPI_FLAVOURS}
 test_mpi()
 {
     local flavor=$1
+    local full_flavor=$flavor
     local host=$2
     local ip1=$3
     local ip2=$4
@@ -60,7 +61,8 @@ test_mpi()
 	# Disable affinity in VMs to work around this
 	ENV_ARGS="MV2_ENABLE_AFFINITY=0 "
     fi
-    tp $host "$ENV_ARGS VERBOSE=1 RUN_ARGS='$RUN_ARGS' SHORT=1 /usr/lib64/mpi/gcc/$flavor/tests/runtests.sh"
+    tp $host "$ENV_ARGS VERBOSE=1 RUN_ARGS='$RUN_ARGS' SHORT=1 /usr/lib64/mpi/gcc/$flavor/tests/runtests.sh" | tee "results/MPI-${full_flavor}.log"
+    ./helpers/common/parse-imb.sh  "results/MPI-${full_flavor}.log"  "results/MPI-${full_flavor}.csv"
 }
 
 mpi_filter_flavour(){
