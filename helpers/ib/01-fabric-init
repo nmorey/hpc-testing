@@ -160,6 +160,9 @@ phase_1_2(){
 	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
 	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
 
+        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
+        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
+
 	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
 	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
 
@@ -228,9 +231,6 @@ interface_setup(){
     juLogSetProperty "$HOST2.ib_ip" "$IP2"
     juLogSetProperty "$HOST1.ib_ip6" "$IP6_1"
     juLogSetProperty "$HOST2.ib_ip6" "$IP6_2"
-
-    juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
-    juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
 
     juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
     juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
