@@ -33,6 +33,10 @@ test_dapl(){
     local dapl_name1=$(tpq $host1 "grep '$ib1' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
     local dapl_name2=$(tpq $host2 "grep '$ib2' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
 
+    if [ "$dapl_name1" == "" -o "$dapl_name2" == "" ]; then
+        echo "Failed to get DAPl parameters"
+        exit 1
+    fi
 
     # Start test server on host2
     tp $host2 'killall -9 dapl-test || true; dapl-test -T S -d -D '$dapl_name2' >/dev/null'  &
