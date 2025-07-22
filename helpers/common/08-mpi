@@ -32,78 +32,78 @@ export MPI_FLAVOURS=${MPI_FLAVOURS:-$DEFAULT_MPI_FLAVOURS}
 
 test_mpi()
 {
-	local flavor=$1
-	local host=$2
-	local ip1=$3
-	local ip2=$4
-	export RUN_ARGS=""
+    local flavor=$1
+    local host=$2
+    local ip1=$3
+    local ip2=$4
+    export RUN_ARGS=""
 
-	case $flavor in
-	    openmpi*--*)
-		RUN_ARGS="${RUN_ARGS} $(echo $flavor | \
+    case $flavor in
+	openmpi*--*)
+	    RUN_ARGS="${RUN_ARGS} $(echo $flavor | \
 		sed -e 's/^[^-]*--/--/' -e 's/--\([^=]\+\)=\([^,-]\+\)/--mca \1 \2 /g' -e 's/%/,/g')"
-		flavor=$(echo $flavor | sed -e 's/^\([^-]*\)--.*$/\1/')
-		;;
-	esac
-	case $flavor in
-		openmpi|openmpi2)
-			RUN_ARGS="${RUN_ARGS} --allow-run-as-root"
-			;;
-		openmpi3|openmpi4|openmpi5)
-			RUN_ARGS="${RUN_ARGS}  --allow-run-as-root --oversubscribe"
-			;;
-	esac
-	RUN_ARGS="--host $ip1,$ip2 -np 2 ${RUN_ARGS}"
-	ENV_ARGS=""
-	if [ "$IN_VM" == "1" ]; then
-		# MVAPICH2 fails to use process affinity as core are reported with weird IDs
-		# Disable affinity in VMs to work around this
-		ENV_ARGS="MV2_ENABLE_AFFINITY=0 "
-	fi
-	tp $host "$ENV_ARGS VERBOSE=1 RUN_ARGS='$RUN_ARGS' SHORT=1 /usr/lib64/mpi/gcc/$flavor/tests/runtests.sh"
+	    flavor=$(echo $flavor | sed -e 's/^\([^-]*\)--.*$/\1/')
+	    ;;
+    esac
+    case $flavor in
+	openmpi|openmpi2)
+	    RUN_ARGS="${RUN_ARGS} --allow-run-as-root"
+	    ;;
+	openmpi3|openmpi4|openmpi5)
+	    RUN_ARGS="${RUN_ARGS}  --allow-run-as-root --oversubscribe"
+	    ;;
+    esac
+    RUN_ARGS="--host $ip1,$ip2 -np 2 ${RUN_ARGS}"
+    ENV_ARGS=""
+    if [ "$IN_VM" == "1" ]; then
+	# MVAPICH2 fails to use process affinity as core are reported with weird IDs
+	# Disable affinity in VMs to work around this
+	ENV_ARGS="MV2_ENABLE_AFFINITY=0 "
+    fi
+    tp $host "$ENV_ARGS VERBOSE=1 RUN_ARGS='$RUN_ARGS' SHORT=1 /usr/lib64/mpi/gcc/$flavor/tests/runtests.sh"
 }
 
 mpi_filter_flavour(){
-	local flavours=$1
-	shift
+    local flavours=$1
+    shift
 
-	while [ $# -ne 0 ]; do
-		local filter=$1
-		flavours=$(echo $flavours | sed -e 's/'$filter'\(--[^,]\+\)\?,//g' -e 's/'$filter'\(--[^,]\+\)\?$//g')
-		shift
-	done
-	echo $flavours
+    while [ $# -ne 0 ]; do
+	local filter=$1
+	flavours=$(echo $flavours | sed -e 's/'$filter'\(--[^,]\+\)\?,//g' -e 's/'$filter'\(--[^,]\+\)\?$//g')
+	shift
+    done
+    echo $flavours
 }
 mpi_get_flavors()
 {
-	local host=$1
-	local flavours=$2
-	case $(get_suse_version $host) in
-		15|15.1)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi3 openmpi4 openmpi5)
-			;;
-		15.2|15.3)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi4 openmpi5)
-			;;
-		15.4|15.5)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi5)
-			;;
-		15.6|15.7)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3 openmpi5)
-			;;
-		16.0)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
-			;;
-		12.3|12.4|12.5)
-			flavours=$(mpi_filter_flavour $flavours openmpi2 openmpi3 openmpi4 openmpi5 mpich)
-			;;
-                2025*)
-			flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
-                        ;;
-		*)
-			# N/A
-			true
-			;;
-	esac
-	echo $flavours
+    local host=$1
+    local flavours=$2
+    case $(get_suse_version $host) in
+	15|15.1)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi3 openmpi4 openmpi5)
+	    ;;
+	15.2|15.3)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi4 openmpi5)
+	    ;;
+	15.4|15.5)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi5)
+	    ;;
+	15.6|15.7)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3 openmpi5)
+	    ;;
+	16.0)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
+	    ;;
+	12.3|12.4|12.5)
+	    flavours=$(mpi_filter_flavour $flavours openmpi2 openmpi3 openmpi4 openmpi5 mpich)
+	    ;;
+        2025*)
+	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
+            ;;
+	*)
+	    # N/A
+	    true
+	    ;;
+    esac
+    echo $flavours
 }

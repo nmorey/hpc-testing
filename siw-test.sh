@@ -27,55 +27,55 @@ load_helpers $(dirname $0) "common"
 load_helpers $(dirname $0) "siw"
 
 usage(){
-	echo "Usage: ${0} [options] <host1> <host2>"
-	echo "Options:"
-	common_usage
-	echo "      --eth1 <ifname>            Name of the IP interface to setup/use for RXE on host1 (default is $DEFAULT_IPPORT1)"
-	echo "      --eth2 <ifname>            Name of the IP interface to setup/use for RXE on host2 (default is $DEFAULT_IPPORT2)"
-	echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
+    echo "Usage: ${0} [options] <host1> <host2>"
+    echo "Options:"
+    common_usage
+    echo "      --eth1 <ifname>            Name of the IP interface to setup/use for RXE on host1 (default is $DEFAULT_IPPORT1)"
+    echo "      --eth2 <ifname>            Name of the IP interface to setup/use for RXE on host2 (default is $DEFAULT_IPPORT2)"
+    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
 }
 
 while [ $# -ne 0 ]; do
-	common_parse $1 $2
-	ret=$?
-	if [ $ret -ne 0 ]; then
-		shift $ret
-		continue
-	fi
+    common_parse $1 $2
+    ret=$?
+    if [ $ret -ne 0 ]; then
+	shift $ret
+	continue
+    fi
 
-	case $1 in
-		--eth1)
-			IPPORT1=$2
-			shift
-			;;
-		--eth2)
-			IPPORT2=$2
-			shift
-			;;
-		-M|--mpi)
-			MPI_FLAVOURS=$2
-			shift
-			;;
-		*)
-			fatal_error "Unknow argument $1"
-			;;
-	esac
-	shift
+    case $1 in
+	--eth1)
+	    IPPORT1=$2
+	    shift
+	    ;;
+	--eth2)
+	    IPPORT2=$2
+	    shift
+	    ;;
+	-M|--mpi)
+	    MPI_FLAVOURS=$2
+	    shift
+	    ;;
+	*)
+	    fatal_error "Unknow argument $1"
+	    ;;
+    esac
+    shift
 done
 common_check
 
 if [ "$IPPORT1" == "" ]; then
-	export IPPORT1=$(tpq $HOST1 "ip addr" | ip_addr_show_to_dev $HOST1)
+    export IPPORT1=$(tpq $HOST1 "ip addr" | ip_addr_show_to_dev $HOST1)
 fi
 if [ "$IPPORT1" == "" ]; then
-	fatal_error "No ethernet device specified or found for $HOST1"
+    fatal_error "No ethernet device specified or found for $HOST1"
 fi
 
 if [ "$IPPORT2" == "" ]; then
-	export IPPORT2=$(tpq $HOST2 "ip addr" | ip_addr_show_to_dev $HOST2)
+    export IPPORT2=$(tpq $HOST2 "ip addr" | ip_addr_show_to_dev $HOST2)
 fi
 if [ "$IPPORT2" == "" ]; then
-	fatal_error "No ethernet device specified or found for $HOST2"
+    fatal_error "No ethernet device specified or found for $HOST2"
 fi
 
 juLogSetProperty host1.name $HOST1
@@ -89,15 +89,15 @@ juLogSetProperty host2.name $HOST2
 #
 #########################
 phase_0(){
-	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
-	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
+    juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
+    juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-        # Remove all RDMA ports first just to be sure
-        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1"
-        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2"
+    # Remove all RDMA ports first just to be sure
+    juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1"
+    juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2"
 
-	juLog -name=h1_firewall_down "firewall_down $HOST1"
-	juLog -name=h2_firewall_down "firewall_down $HOST2"
+    juLog -name=h1_firewall_down "firewall_down $HOST1"
+    juLog -name=h2_firewall_down "firewall_down $HOST2"
 
 }
 run_phase 0 phase_0 "State Cleanup"
@@ -120,11 +120,11 @@ get_srdma_port $HOST1 1 siw
 get_srdma_port $HOST2 2 siw
 
 phase_1(){
-	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
-	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
+    juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
+    juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
 
-	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
-	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
+    juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
+    juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
 
 }
 run_phase 1 phase_1 "Fabric init"
@@ -143,7 +143,7 @@ run_phase 1 phase_1 "Fabric init"
 #
 #########################
 phase_5(){
-	juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
+    juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
 }
 run_phase 5 phase_5 "NFSoRDMA"
 
@@ -183,58 +183,58 @@ run_phase 5 phase_5 "NFSoRDMA"
 #########################
 
 test_nvme(){
-	local server=$1
-	local server_ip=$2
-	local client=$3
+    local server=$1
+    local server_ip=$2
+    local client=$3
 
 
-	# Cleanup old stuff just in case
-	tp $client "mount | grep /dev/nvme | awk '{ print \$1}' | xargs -I - umount - 2>/dev/null || true;
-	   		    nvme disconnect -n testnq || true"
+    # Cleanup old stuff just in case
+    tp $client "mount | grep /dev/nvme | awk '{ print \$1}' | xargs -I - umount - 2>/dev/null || true;
+                nvme disconnect -n testnq || true"
 
-	cat helpers/ib/nvmet.json | tpq $server 'cat > hpc-nvmet.json'
+    cat helpers/ib/nvmet.json | tpq $server 'cat > hpc-nvmet.json'
 
-	tp $server 'umount /tmp/hpc-test.mount 2>/dev/null || true;
-	   		    rm -Rf /tmp/hpc-test.mount /tmp/hpc-test.io 2>/dev/null || true;
-	   		   	losetup -a | grep hpc-test.io | sed -e s/:.*// | xargs losetup -d || true;
-				modprobe nvmet;
-				nvmetcli clear || true;
-				modprobe nvmet_rdma &&
-				LOOPD=$(losetup -f) &&
-				dd if=/dev/zero of=/tmp/hpc-test.io bs=1M count=256 &&
-				losetup ${LOOPD} /tmp/hpc-test.io &&
-				mkfs.ext3 ${LOOPD} &&
-				mkdir /tmp/hpc-test.mount/ &&
-				mount ${LOOPD} /tmp/hpc-test.mount/ &&
-				dd if=/dev/urandom bs=1M count=64 of=/tmp/hpc-test.mount/input &&
-				umount  /tmp/hpc-test.mount &&
-				sed -i -e s/@MYIP@/'$server_ip'/ -e s%@BLK@%${LOOPD}% hpc-nvmet.json &&
-				nvmetcli restore hpc-nvmet.json'
+    tp $server 'umount /tmp/hpc-test.mount 2>/dev/null || true;
+               rm -Rf /tmp/hpc-test.mount /tmp/hpc-test.io 2>/dev/null || true;
+               losetup -a | grep hpc-test.io | sed -e s/:.*// | xargs losetup -d || true;
+               modprobe nvmet;
+               nvmetcli clear || true;
+               modprobe nvmet_rdma &&
+               LOOPD=$(losetup -f) &&
+               dd if=/dev/zero of=/tmp/hpc-test.io bs=1M count=256 &&
+               losetup ${LOOPD} /tmp/hpc-test.io &&
+               mkfs.ext3 ${LOOPD} &&
+               mkdir /tmp/hpc-test.mount/ &&
+               mount ${LOOPD} /tmp/hpc-test.mount/ &&
+               dd if=/dev/urandom bs=1M count=64 of=/tmp/hpc-test.mount/input &&
+               umount  /tmp/hpc-test.mount &&
+               sed -i -e s/@MYIP@/'$server_ip'/ -e s%@BLK@%${LOOPD}% hpc-nvmet.json &&
+               nvmetcli restore hpc-nvmet.json'
 
-	tp $client 'umount /tmp/srp-hpc-test 2>/dev/null || true;
-	   		    rm -Rf /tmp/srp-hpc-test 2>/dev/null || true;
-				modprobe nvme_rdma &&
-				mkdir /tmp/srp-hpc-test &&
-				rm -f /etc/nvme/hostid &&
-				nvme discover -t rdma -a '$server_ip' -s 4420 &&
-				nvme connect -t rdma -n testnqn -a '$server_ip' -s 4420 &&
-				block_device=$(lsblk | grep nvme | awk "{ print \$1}") &&
-				echo $block_device &&
-				mount /dev/$block_device /tmp/srp-hpc-test &&
-				cp -R /tmp/srp-hpc-test/input /tmp/srp-hpc-test/output &&
-				diff -q /tmp/srp-hpc-test/input /tmp/srp-hpc-test/output&&
-				umount /tmp/srp-hpc-test &&
-				nvme disconnect -n testnqn &&
-				! (lsblk | grep nvme)'
+    tp $client 'umount /tmp/srp-hpc-test 2>/dev/null || true;
+               rm -Rf /tmp/srp-hpc-test 2>/dev/null || true;
+               modprobe nvme_rdma &&
+               mkdir /tmp/srp-hpc-test &&
+               rm -f /etc/nvme/hostid &&
+               nvme discover -t rdma -a '$server_ip' -s 4420 &&
+               nvme connect -t rdma -n testnqn -a '$server_ip' -s 4420 &&
+               block_device=$(lsblk | grep nvme | awk "{ print \$1}") &&
+               echo $block_device &&
+               mount /dev/$block_device /tmp/srp-hpc-test &&
+               cp -R /tmp/srp-hpc-test/input /tmp/srp-hpc-test/output &&
+               diff -q /tmp/srp-hpc-test/input /tmp/srp-hpc-test/output&&
+               umount /tmp/srp-hpc-test &&
+               nvme disconnect -n testnqn &&
+               ! (lsblk | grep nvme)'
 
-	tp $server 'nvmetcli clear &&
-	   		    mount -o loop /tmp/hpc-test.io /tmp/hpc-test.mount &&
-			   	diff -q /tmp/hpc-test.mount/input /tmp/hpc-test.mount/output &&
-				umount /tmp/hpc-test.mount &&
-				losetup -a | grep hpc-test.io | sed -e s/:.*// | xargs losetup -d'
+    tp $server 'nvmetcli clear &&
+                mount -o loop /tmp/hpc-test.io /tmp/hpc-test.mount &&
+                diff -q /tmp/hpc-test.mount/input /tmp/hpc-test.mount/output &&
+                umount /tmp/hpc-test.mount &&
+                losetup -a | grep hpc-test.io | sed -e s/:.*// | xargs losetup -d'
 }
 
 phase_10(){
-	juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
+    juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
 }
 run_phase 10 phase_10 "nvme"

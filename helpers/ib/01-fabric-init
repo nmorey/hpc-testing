@@ -17,24 +17,24 @@
 
 setup_rdma_ndd()
 {
-	local host=$1
-	case $(get_suse_version $host) in
-		12.3|42.3)
-			tp $host 'systemctl status rdma-ndd ||
+    local host=$1
+    case $(get_suse_version $host) in
+	12.3|42.3)
+	    tp $host 'systemctl status rdma-ndd ||
 				   	  (systemctl start rdma-ndd && systemctl status rdma-ndd)'
-			;;
-		*)
-			true
-			;;
-	esac
+	    ;;
+	*)
+	    true
+	    ;;
+    esac
 }
 
 start_opensm()
 {
-	local host=$1
-	shift
-	# Extra args = openSM options
-	tp $host "opensm --daemon $*"
+    local host=$1
+    shift
+    # Extra args = openSM options
+    tp $host "opensm --daemon $*"
 }
 
 extract_port_info(){
@@ -73,106 +73,106 @@ extract_port_info(){
 
 get_port()
 {
-	local host=$1
-	local host_id=$2
-        local selected_hca=$3
-        local res
+    local host=$1
+    local host_id=$2
+    local selected_hca=$3
+    local res
 
-        local data
-	res=$(tpq_fun $host extract_port_info "$selected_hca")
+    local data
+    res=$(tpq_fun $host extract_port_info "$selected_hca")
 
-	if [ "$res" == "" ]; then
-            if [ "$selected_hca" != ""  ]; then
-		fatal_error "Could not fint HCA $selected_hca on $host"
-            else
-		fatal_error "Failed to find an active port on $host"
-            fi
-	fi
+    if [ "$res" == "" ]; then
+        if [ "$selected_hca" != ""  ]; then
+	    fatal_error "Could not fint HCA $selected_hca on $host"
+        else
+	    fatal_error "Failed to find an active port on $host"
+        fi
+    fi
 
-        read -a array <<< "$res"
+    read -a array <<< "$res"
 
-	eval export IPPORT$host_id=${array[0]}
-	eval export GUID$host_id=${array[1]}
-	eval export LID$host_id=${array[2]}
-	eval export HCA$host_id=${array[3]}
-	eval export IBPORT$host_id=${array[4]}
-	eval export SYSGUID$host_id=${array[5]}
+    eval export IPPORT$host_id=${array[0]}
+    eval export GUID$host_id=${array[1]}
+    eval export LID$host_id=${array[2]}
+    eval export HCA$host_id=${array[3]}
+    eval export IBPORT$host_id=${array[4]}
+    eval export SYSGUID$host_id=${array[5]}
 
-	juLogSetProperty $host.ip_if ${array[0]}
-	juLogSetProperty $host.guid ${array[1]}
-	juLogSetProperty $host.lid ${array[2]}
-	juLogSetProperty $host.hca ${array[3]}
-	juLogSetProperty $host.port ${array[4]}
-	juLogSetProperty $host.sysguid ${array[5]}
+    juLogSetProperty $host.ip_if ${array[0]}
+    juLogSetProperty $host.guid ${array[1]}
+    juLogSetProperty $host.lid ${array[2]}
+    juLogSetProperty $host.hca ${array[3]}
+    juLogSetProperty $host.port ${array[4]}
+    juLogSetProperty $host.sysguid ${array[5]}
 
-	echo "[SUCCESS] Host $host uses interface ${array[0]}."\
-		 " Board=${array[3]} Port=${array[4]} GUID=${array[1]} LID=${array[2]} SYSGUID=${array[5]}"
+    echo "[SUCCESS] Host $host uses interface ${array[0]}."\
+	 " Board=${array[3]} Port=${array[4]} GUID=${array[1]} LID=${array[2]} SYSGUID=${array[5]}"
 }
 
 test_ibdiagnet()
 {
-	local host=$1
-	tp $HOST1 'rm -f topo.out'
-	tp $HOST1 'ibdiagnet -wt topo.out'
-	tp $HOST1 'ibdiagnet -pc'
-	sleep 17
-	tp $HOST1 'ibdiagnet -c 1000'
+    local host=$1
+    tp $HOST1 'rm -f topo.out'
+    tp $HOST1 'ibdiagnet -wt topo.out'
+    tp $HOST1 'ibdiagnet -pc'
+    sleep 17
+    tp $HOST1 'ibdiagnet -c 1000'
 
-#   We should check the against the topo file
-#   But I cannot figure out how to know which of the system name is ours
-#	tp $HOST1 ibdiagnet -t topo2.out
+    #   We should check the against the topo file
+    #   But I cannot figure out how to know which of the system name is ours
+    #	tp $HOST1 ibdiagnet -t topo2.out
 }
 
 # Check bsc#972725
 test_nodedesc()
 {
-	local host=$1
-	local guid=$2
-	local hca=$3
+    local host=$1
+    local guid=$2
+    local hca=$3
 
-	node_desc=$(tpq $host "smpquery -G NodeDesc $guid" | \
-					sed -e 's/^Node Description:\.*//' | awk '{ print $1}')
-	rhostname=$(tpq $host "hostname -s")
-	if [ "$node_desc" != "$rhostname" ]; then
-		status=$(tpq $host "systemctl status rdma-ndd")
-		sys_val=$(tpq $host "cat /sys/class/infiniband/${hca}/node_desc")
-		fatal_error "Missing or bad hostname in node description. Expected '$rhostname' found '$node_desc'.\nsysvalue=${sys_val}\n${status}" >&2
+    node_desc=$(tpq $host "smpquery -G NodeDesc $guid" | \
+		    sed -e 's/^Node Description:\.*//' | awk '{ print $1}')
+    rhostname=$(tpq $host "hostname -s")
+    if [ "$node_desc" != "$rhostname" ]; then
+	status=$(tpq $host "systemctl status rdma-ndd")
+	sys_val=$(tpq $host "cat /sys/class/infiniband/${hca}/node_desc")
+	fatal_error "Missing or bad hostname in node description. Expected '$rhostname' found '$node_desc'.\nsysvalue=${sys_val}\n${status}" >&2
 
-	fi
+    fi
 }
 
 phase_1_1(){
-	juLog -name=h1_rdma_ndd "setup_rdma_ndd $HOST1"
-	juLog -name=h2_rdma_ndd "setup_rdma_ndd $HOST2"
+    juLog -name=h1_rdma_ndd "setup_rdma_ndd $HOST1"
+    juLog -name=h2_rdma_ndd "setup_rdma_ndd $HOST2"
 
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_openSM_start "start_opensm $HOST1 -p 10"
-		# Leave some time for openSM to bring the link up
-		sleep 10
-	fi
+    if [ $DO_MAD -eq 1 ]; then
+	juLog_fatal -name=h1_openSM_start "start_opensm $HOST1 -p 10"
+	# Leave some time for openSM to bring the link up
+	sleep 10
+    fi
 }
 
 phase_1_2(){
 
-	# Let IP settle down or SSH key setup might fail
-	sleep 5
+    # Let IP settle down or SSH key setup might fail
+    sleep 5
 
-	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
-	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
+    juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
+    juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
 
-        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
-        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
+    juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
+    juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
 
-	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
-	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
+    juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
+    juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
 
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_ibdiagnet test_ibdiagnet $HOST1
-		juLog_fatal -name=h2_ibdiagnet test_ibdiagnet $HOST2
+    if [ $DO_MAD -eq 1 ]; then
+	juLog_fatal -name=h1_ibdiagnet test_ibdiagnet $HOST1
+	juLog_fatal -name=h2_ibdiagnet test_ibdiagnet $HOST2
 
-		juLog -name=h1_test_nodedesc "test_nodedesc $HOST1 $GUID1 $HCA1"
-		juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
-	fi
+	juLog -name=h1_test_nodedesc "test_nodedesc $HOST1 $GUID1 $HCA1"
+	juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
+    fi
 }
 
 check_ip_configuration(){

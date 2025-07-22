@@ -84,14 +84,14 @@ nvme_test_and_clear_server()
 }
 
 test_nvme(){
-	local server=$1
-	local server_ip=$2
-	local client=$3
+    local server=$1
+    local server_ip=$2
+    local client=$3
 
-	cat helpers/ib/nvmet.json | tpq $server 'cat > hpc-nvmet.json'
+    cat helpers/ib/nvmet.json | tpq $server 'cat > hpc-nvmet.json'
 
-	tp_fun $client nvme_client_pre_cleanup
-	tp_fun $server nvme_setup_server $server_ip
-	tp_fun $client nvme_run_client $server_ip
-	tp_fun $server nvme_test_and_clear_server
+    tp_fun $client nvme_client_pre_cleanup
+    tp_fun $server nvme_setup_server $server_ip
+    tp_fun $client nvme_run_client $server_ip
+    tp_fun $server nvme_test_and_clear_server
 }

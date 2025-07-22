@@ -23,5 +23,5 @@
 
 get_package_list()
 {
-	get_common_package_list $1
+    get_common_package_list $1
 }

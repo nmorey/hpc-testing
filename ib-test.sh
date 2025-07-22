@@ -33,72 +33,72 @@ load_helpers $(dirname $0) "common"
 load_helpers $(dirname $0) "ib"
 
 usage(){
-	echo "Usage: ${0} [options] <host1> <host2>"
-	echo "Options:"
-	common_usage
-	echo "Interface configuration:"
-	echo "      --hca1 <hca name>          Select this specific HCA on host1 (default is first active)"
-	echo "      --hca2 <hca name>          Select this specific HCA on host2 (default is first active)"
-	echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is current address)"
-	echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is current address)"
-	echo "      --ip6-1 <ipv6>             IPv6 for IPoIB on host1 (default is current address)"
-	echo "      --ip6-2 <ipv6>             IPv6 for IPoIB on host2 (default is current address)"
-	echo "Test flags:"
-	echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
-	echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
-	echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
-	echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
+    echo "Usage: ${0} [options] <host1> <host2>"
+    echo "Options:"
+    common_usage
+    echo "Interface configuration:"
+    echo "      --hca1 <hca name>          Select this specific HCA on host1 (default is first active)"
+    echo "      --hca2 <hca name>          Select this specific HCA on host2 (default is first active)"
+    echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is current address)"
+    echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is current address)"
+    echo "      --ip6-1 <ipv6>             IPv6 for IPoIB on host1 (default is current address)"
+    echo "      --ip6-2 <ipv6>             IPv6 for IPoIB on host2 (default is current address)"
+    echo "Test flags:"
+    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
+    echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
+    echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
+    echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
 }
 
 while [ $# -ne 0 ]; do
-	common_parse $1 $2
-	ret=$?
-	if [ $ret -ne 0 ]; then
-		shift $ret
-		continue
-	fi
+    common_parse $1 $2
+    ret=$?
+    if [ $ret -ne 0 ]; then
+	shift $ret
+	continue
+    fi
 
-	case $1 in
-		--hca1)
-			HCA1=$2
-			shift
-			;;
-		--hca2)
-			HCA2=$2
-			shift
-			;;
-		--ip1)
-			IP1=$2
-			shift
-			;;
-		--ip2)
-			IP2=$2
-			shift
-			;;
-		--ip6-1)
-			IP6_1=$2
-			shift
-			;;
-		--ip6-2)
-			IP6_2=$2
-			shift
-			;;
-		-M|--mpi)
-			MPI_FLAVOURS=$2
-			shift
-			;;
-		-I|--ipoib)
-			IPOIB_MODES=$2
-			shift
-			;;
-		-n|--no-mad)
-			DO_MAD=0
-			;;
-		*)
-			fatal_error "Unknow argument $1"
-			;;
-	esac
-	shift
+    case $1 in
+	--hca1)
+	    HCA1=$2
+	    shift
+	    ;;
+	--hca2)
+	    HCA2=$2
+	    shift
+	    ;;
+	--ip1)
+	    IP1=$2
+	    shift
+	    ;;
+	--ip2)
+	    IP2=$2
+	    shift
+	    ;;
+	--ip6-1)
+	    IP6_1=$2
+	    shift
+	    ;;
+	--ip6-2)
+	    IP6_2=$2
+	    shift
+	    ;;
+	-M|--mpi)
+	    MPI_FLAVOURS=$2
+	    shift
+	    ;;
+	-I|--ipoib)
+	    IPOIB_MODES=$2
+	    shift
+	    ;;
+	-n|--no-mad)
+	    DO_MAD=0
+	    ;;
+	*)
+	    fatal_error "Unknow argument $1"
+	    ;;
+    esac
+    shift
 done
 common_check
 
@@ -158,9 +158,9 @@ run_phase 2 ipoib_run_tests "IPoIB"
 #
 #########################
 phase_3(){
-	if [ $DO_MAD -eq 1 ]; then
-		juLog -name=test_sm_failover "test_sm_failover $HOST1 $LID1 $HOST2 $LID2"
-	fi
+    if [ $DO_MAD -eq 1 ]; then
+	juLog -name=test_sm_failover "test_sm_failover $HOST1 $LID1 $HOST2 $LID2"
+    fi
 }
 run_phase 3 phase_3 "SM Failover"
 
@@ -170,7 +170,7 @@ run_phase 3 phase_3 "SM Failover"
 #
 #########################
 phase_4(){
-	juLog -name=srp_server test_srp $HOST2 $GUID2 $SYSGUID2 $HCA2 $IBPORT2 $HOST1 $GUID1 $HCA1 $IBPORT1
+    juLog -name=srp_server test_srp $HOST2 $GUID2 $SYSGUID2 $HCA2 $IBPORT2 $HOST1 $GUID1 $HCA1 $IBPORT1
 }
 run_phase 4 phase_4 "SRP"
 
@@ -180,7 +180,7 @@ run_phase 4 phase_4 "SRP"
 #
 #########################
 phase_5(){
-	juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
+    juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
 }
 run_phase 5 phase_5 "NFSoRDMA"
 
@@ -190,7 +190,7 @@ run_phase 5 phase_5 "NFSoRDMA"
 #
 #########################
 phase_6(){
-	juLog -name=dapl -error='DAT_' test_dapl $HOST1 $IPPORT1 $HOST2 $IPPORT2 $IP2
+    juLog -name=dapl -error='DAT_' test_dapl $HOST1 $IPPORT1 $HOST2 $IPPORT2 $IP2
 }
 run_phase 6 phase_6 "DAPL"
 
@@ -200,12 +200,12 @@ run_phase 6 phase_6 "DAPL"
 #
 #########################
 phase_7(){
-	for mode in rc uc ud srq; do
-		juLog -name=${mode}_pingpong "(
+    for mode in rc uc ud srq; do
+	juLog -name=${mode}_pingpong "(
 	  	  test_ibv_pingpong ibv_${mode}_pingpong $HOST1 $HCA1 $IBPORT1 $HOST2 $HCA2 $IBPORT2 &&
 	  	  test_ibv_pingpong ibv_${mode}_pingpong $HOST2 $HCA2 $IBPORT2 $HOST1 $HCA1 $IBPORT1
         )"
-	done
+    done
 }
 run_phase 7 phase_7 "RDMA/Verbs"
 
@@ -215,11 +215,11 @@ run_phase 7 phase_7 "RDMA/Verbs"
 #
 #########################
 phase_8(){
-	FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
-	for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
+    FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
+    for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
 
-		juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2
-	done
+	juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2
+    done
 }
 run_phase 8 phase_8 "MPI"
 
@@ -229,7 +229,7 @@ run_phase 8 phase_8 "MPI"
 #
 #########################
 phase_9(){
-	juLog -name=fabtests test_libfabric $HOST1 $IP1 $IP2
+    juLog -name=fabtests test_libfabric $HOST1 $IP1 $IP2
 }
 run_phase 9 phase_9 "libfabric"
 
@@ -240,7 +240,7 @@ run_phase 9 phase_9 "libfabric"
 #
 #########################
 phase_10(){
-	juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
+    juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
 }
 run_phase 10 phase_10 "nvme"
 

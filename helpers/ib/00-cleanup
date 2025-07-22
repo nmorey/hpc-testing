@@ -23,15 +23,15 @@
 
 get_package_list()
 {
-	PACKAGE_LIST=$(get_common_package_list $1)
-	PACKAGE_LIST+="opensm"
-	echo $PACKAGE_LIST
+    PACKAGE_LIST=$(get_common_package_list $1)
+    PACKAGE_LIST+="opensm"
+    echo $PACKAGE_LIST
 }
 
 kill_opensm()
 {
-	local host=$1
-	tp $host 'killall opensm || true; sleep 1; killall -9 opensm || true';
+    local host=$1
+    tp $host 'killall opensm || true; sleep 1; killall -9 opensm || true';
 }
 
 do_reset_all_ports()
@@ -63,24 +63,24 @@ load_kmods(){
 }
 
 phase_0(){
-	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
-	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
+    juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
+    juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-	juLog_fatal -name=h1_load_kmods "load_kmods $HOST1"
-	juLog_fatal -name=h2_load_kmods "load_kmods $HOST2"
+    juLog_fatal -name=h1_load_kmods "load_kmods $HOST1"
+    juLog_fatal -name=h2_load_kmods "load_kmods $HOST2"
 
-	juLog -name=h1_kill_opensm "kill_opensm $HOST1"
-	juLog -name=h2_kill_opensm "kill_opensm $HOST2"
+    juLog -name=h1_kill_opensm "kill_opensm $HOST1"
+    juLog -name=h2_kill_opensm "kill_opensm $HOST2"
 
-	if [ $DO_MAD -eq 1 ]; then
-		juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
-		juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
+    if [ $DO_MAD -eq 1 ]; then
+	juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
+	juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
 
-		# We need to sleep a little bit here to let the port reset
-		sleep 5
-	fi
+	# We need to sleep a little bit here to let the port reset
+	sleep 5
+    fi
 
-	juLog -name=h1_firewall_down "firewall_down $HOST1"
-	juLog -name=h2_firewall_down "firewall_down $HOST2"
+    juLog -name=h1_firewall_down "firewall_down $HOST1"
+    juLog -name=h2_firewall_down "firewall_down $HOST2"
 
 }
