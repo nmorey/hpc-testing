@@ -42,58 +42,67 @@ set_properties()
 {
     local host=$1
     PACKAGE_LIST=$(get_package_list $host)
-    VERSIONS=$(tpq $host "rpm -q --qf '%{NAME} %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\\n' $PACKAGE_LIST")
 
-    echo "$VERSIONS" | while read line; do 
-	package=$(echo $line | awk '{print $1}')
-	version=$(echo $line | awk '{print $2}')
-	juLogSetProperty $host.$package $version
-    done
+    while read line; do
+	package=$(echo "$line" | awk '{print $1}')
+	version=$(echo "$line" | awk '{print $2}')
+	juLogSetProperty "$host.pkg.$package" "$version"
+    done < <(tpq $host "rpm -q --qf '%{NAME} %{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\\n' $PACKAGE_LIST")
+
     kernel_version=$(tpq $host "uname -a")
-    juLogSetProperty $host.kernel "$kernel_version"
+    juLogSetProperty "$host.kernel" "$kernel_version"
+
 }
 
 get_common_package_list()
 {
     local host=$1
     PACKAGE_LIST="infiniband-diags rdma-ndd libibverbs-utils srp_daemon fabtests "
-    PACKAGE_LIST+=" mpitests-mvapich2"
+    PACKAGE_LIST+=" rdma-core mvapich2 mpitests-mvapich2"
     PACKAGE_LIST+=" ibutils psmisc nfs-kernel-server"
     PACKAGE_LIST+=" nvme-cli nvmetcli bc iputils"
 
     case $(get_suse_version $host) in
 	15|15.1)
 	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" openmpi2 mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi2 mpitests-mpich"
 	    ;;
 	15.2|15.3)
 	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" openmpi2 mpich openmpi3"
 	    PACKAGE_LIST+=" mpitests-openmpi2 mpitests-mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi3"
 	    ;;
 	15.4|15.5)
 	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" openmpi2 mpich openmpi3 openmpi4"
 	    PACKAGE_LIST+=" mpitests-openmpi2 mpitests-mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi3 mpitests-openmpi4"
 	    ;;
 	15.6|15.7)
 	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" openmpi4 mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi4 mpitests-mpich"
 	    ;;
         16.0)
 	    PACKAGE_LIST+=" targetcli-fb "
+	    PACKAGE_LIST+=" openmpi4 openmpi5 mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi4 mpitests-openmpi5 mpitests-mpich"
 	    ;;
 	42.3|12.3|12.4|12.5)
+	    PACKAGE_LIST+=" openmpi"
 	    PACKAGE_LIST+=" mpitests-openmpi targetcli-fb dapl-utils "
 	    ;;
 	2022*|2023*|2024*)
  	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" openmpi2 mpich openmpi3 openmpi4"
 	    PACKAGE_LIST+=" mpitests-openmpi2 mpitests-mpich"
 	    PACKAGE_LIST+=" mpitests-openmpi3 mpitests-openmpi4"
             ;;
 	2025*)
 	    PACKAGE_LIST+=" python3-targetcli-fb dapl-utils "
+	    PACKAGE_LIST+=" mpich openmpi4 openmpi5"
 	    PACKAGE_LIST+=" mpitests-mpich mpitests-openmpi4"
 	    PACKAGE_LIST+=" mpitests-openmpi5"
 	    ;;
