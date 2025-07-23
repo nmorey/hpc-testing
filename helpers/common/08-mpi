@@ -15,21 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DEFAULT_MPI_FLAVOURS="\
-mvapich2,mpich,openmpi,openmpi2,\
-openmpi3,\
-openmpi3--btl=openib--pml=^ucx,\
-openmpi3--btl=ofi--pml=^ucx,\
-openmpi3--btl=self--pml=ucx,\
-openmpi4,\
-openmpi4--btl=ofi--pml=^ucx,\
-openmpi4--btl=self--pml=ucx,\
-openmpi5,\
-openmpi5--btl=ofi--pml=cm,\
-openmpi5--btl=uct--pml=ucx"
-
-export MPI_FLAVOURS=${MPI_FLAVOURS:-$DEFAULT_MPI_FLAVOURS}
-
 test_mpi()
 {
     local flavor=$1
@@ -76,37 +61,55 @@ mpi_filter_flavour(){
     shift
 
     while [ $# -ne 0 ]; do
-	local filter=$1
-	flavours=$(echo $flavours | sed -e 's/'$filter'\(--[^,]\+\)\?,//g' -e 's/'$filter'\(--[^,]\+\)\?$//g')
-	shift
+   local filter=$1
+   flavours=$(echo $flavours | sed -e 's/'$filter'\(--[^,]\+\)\?,//g' -e 's/'$filter'\(--[^,]\+\)\?$//g')
+   shift
     done
     echo $flavours
 }
+
 mpi_get_flavors()
 {
     local host=$1
     local flavours=$2
-    case $(get_suse_version $host) in
+    local suse_version=$(get_suse_version $host)
+
+    # Generate default flavour list if none is provided
+    if [ "$flavours" != "" ]; then
+        echo $flavours
+        return 0
+    fi
+    case $suse_version in
+	12.3|12.4|12.5)
+	    flavours="mpich,openmpi"
+	    ;;
 	15|15.1)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi3 openmpi4 openmpi5)
+	    flavours="mvapich2,mpich,openmpi"
 	    ;;
 	15.2|15.3)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi4 openmpi5)
+	    flavours="mvapich2,mpich,openmpi2,openmpi3"
 	    ;;
-	15.4|15.5)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi5)
+	15.4)
+	    flavours="mvapich2,mpich,openmpi2,openmpi3,openmpi4"
+            ;;
+	15.5)
+	    flavours="mvapich2,mpich,openmpi2,openmpi3,openmpi4,\
+openmpi3--btl=openib--pml=^ucx,\
+openmpi3--btl=self--pml=ucx,\
+openmpi4--btl=ofi--pml=^ucx,\
+openmpi4--btl=self--pml=ucx"
 	    ;;
 	15.6|15.7)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3 openmpi5)
+	    flavours="mvapich2,mpich,openmpi4,\
+openmpi4--btl=ofi--pml=^ucx,\
+openmpi4--btl=self--pml=ucx"
 	    ;;
-	16.0)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
-	    ;;
-	12.3|12.4|12.5)
-	    flavours=$(mpi_filter_flavour $flavours openmpi2 openmpi3 openmpi4 openmpi5 mpich)
-	    ;;
-        2025*)
-	    flavours=$(mpi_filter_flavour $flavours openmpi openmpi2 openmpi3)
+	16.0|2025*)
+	    flavours="mvapich2,mpich,openmpi4,openmpi5,\
+openmpi4--btl=ofi--pml=^ucx,\
+openmpi4--btl=self--pml=ucx,\
+openmpi5--btl=ofi--pml=cm,\
+openmpi5--btl=uct--pml=ucx"
             ;;
 	*)
 	    # N/A

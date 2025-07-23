@@ -27,7 +27,7 @@ get_package_list(){
 usage(){
     echo "Usage: ${0} [options] <host1> <host2>"
     common_usage
-    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
+    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
 }
 
 while [ $# -ne 0 ]; do

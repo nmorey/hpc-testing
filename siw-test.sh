@@ -32,7 +32,7 @@ usage(){
     common_usage
     echo "      --eth1 <ifname>            Name of the IP interface to setup/use for RXE on host1 (default is $DEFAULT_IPPORT1)"
     echo "      --eth2 <ifname>            Name of the IP interface to setup/use for RXE on host2 (default is $DEFAULT_IPPORT2)"
-    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
+    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
 }
 
 while [ $# -ne 0 ]; do
