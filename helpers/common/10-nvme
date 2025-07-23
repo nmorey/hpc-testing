@@ -17,8 +17,8 @@
 
 nvme_client_pre_cleanup()
 {
-    mount | grep /dev/nvme | awk '{ print \$1}' | xargs -I - umount - 2>/dev/null
-    nvme disconnect -n testnq
+    mount | grep /dev/nvme | awk '{ print $1}' | xargs -I - umount - 2>/dev/null
+    nvme disconnect -n testnq || true
     return 0
 }
 
