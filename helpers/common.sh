@@ -205,6 +205,7 @@ common_usage(){
     echo "  -p, --phase <#phase>           Launch only this phase"
     echo "  -v, --verbose                  Display test logs in console."
     echo "      --in-vm                    Test is being run in a virtual machine"
+    echo "  -s, --suite <name>             Set JUnit testsuite name"
 
 }
 
@@ -231,6 +232,10 @@ common_parse(){
 	    IN_VM=1
 	    return 1
 	    ;;
+        -s|--suite)
+            suite=$2
+            return 2
+            ;;
 	--help|-h)
 	    usage $0
 	    exit 1
