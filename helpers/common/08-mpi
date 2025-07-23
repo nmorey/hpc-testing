@@ -61,7 +61,10 @@ test_mpi()
 	# Disable affinity in VMs to work around this
 	ENV_ARGS="MV2_ENABLE_AFFINITY=0 "
     fi
+    set -o pipefail
+    set -e
     tp $host "$ENV_ARGS VERBOSE=1 RUN_ARGS='$RUN_ARGS' SHORT=1 /usr/lib64/mpi/gcc/$flavor/tests/runtests.sh" | tee "results/MPI-${full_flavor}.log"
+    set +o pipefail
     ./helpers/common/parse-imb.sh  "results/MPI-${full_flavor}.log"  "results/MPI-${full_flavor}.csv"
 }
 
