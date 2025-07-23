@@ -29,7 +29,7 @@ test_libfabric()
 	15.6)
 	    skipped_tests=""
 	    ;;
-	15.7|16.0)
+	15.7|16.0|2025*)
 	    skipped_tests="-e fi_dgram_pingpong"
 	    ;;
 	*)
