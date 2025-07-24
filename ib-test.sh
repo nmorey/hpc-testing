@@ -45,7 +45,6 @@ usage(){
     echo "      --ip6-1 <ipv6>             IPv6 for IPoIB on host1 (default is current address)"
     echo "      --ip6-2 <ipv6>             IPv6 for IPoIB on host2 (default is current address)"
     echo "Test flags:"
-    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
     echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
     echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
     echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
@@ -84,10 +83,6 @@ while [ $# -ne 0 ]; do
 	    ;;
 	--ip6-2)
 	    IP6_2=$2
-	    shift
-	    ;;
-	-M|--mpi)
-	    MPI_FLAVOURS=$2
 	    shift
 	    ;;
 	-I|--ipoib)

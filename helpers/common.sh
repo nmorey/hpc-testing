@@ -206,6 +206,7 @@ common_usage(){
     echo "  -v, --verbose                  Display test logs in console."
     echo "      --in-vm                    Test is being run in a virtual machine"
     echo "  -s, --suite <name>             Set JUnit testsuite name"
+    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
 
 }
 
@@ -236,6 +237,10 @@ common_parse(){
             juSUITE=$2
             return 2
             ;;
+	-M|--mpi)
+	    MPI_FLAVOURS=$2
+	    shift
+	    ;;
 	--help|-h)
 	    usage $0
 	    exit 1

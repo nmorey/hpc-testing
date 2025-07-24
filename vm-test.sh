@@ -27,7 +27,6 @@ get_package_list(){
 usage(){
     echo "Usage: ${0} [options] <host1> <host2>"
     common_usage
-    echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
 }
 
 while [ $# -ne 0 ]; do
@@ -39,10 +38,6 @@ while [ $# -ne 0 ]; do
     fi
 
     case $1 in
-	-M|--mpi)
-	    MPI_FLAVOURS=$2
-	    shift
-	    ;;
 	*)
 	    fatal_error "Unknow argument $1"
 	    ;;
