@@ -17,26 +17,26 @@
 
 test_libfabric()
 {
-	local host=$1
-	local server_ip=$2
-	local client_ip=$3
-	local skipped_tests=""
+    local host=$1
+    local server_ip=$2
+    local client_ip=$3
+    local skipped_tests=""
 
-	case $(get_suse_version $host) in
-		15|15.1|15.2|15.3|15.4|15.5)
-			skipped_tests="-e fi_rma_bw,fi_rdm_cntr_pingpong"
-			;;
-		15.6)
-		    skipped_tests=""
-			;;
-		15.7|16.0)
-		    skipped_tests="-e fi_dgram_pingpong"
-		    ;;
-		*)
-		    # N/A
-		    true
-		    ;;
-        esac
-	tp $host "/usr/bin/runfabtests.sh -v -t short ${skipped_tests} verbs $server_ip $client_ip"
+    case $(get_suse_version $host) in
+	15|15.1|15.2|15.3|15.4|15.5)
+	    skipped_tests="-e fi_rma_bw,fi_rdm_cntr_pingpong"
+	    ;;
+	15.6)
+	    skipped_tests=""
+	    ;;
+	15.7|16.0|2025*)
+	    skipped_tests="-e fi_dgram_pingpong"
+	    ;;
+	*)
+	    # N/A
+	    true
+	    ;;
+    esac
+    tp $host "/usr/bin/runfabtests.sh -v -t short ${skipped_tests} verbs $server_ip $client_ip"
 }
 

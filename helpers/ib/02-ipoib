@@ -17,51 +17,48 @@
 
 set_ipoib_mode()
 {
-	local host=$1
-	local port=$2
-	local mode=$3
+    local host=$1
+    local port=$2
+    local mode=$3
 
-	tp $host "echo $mode > /sys/class/net/$port/mode"
-	R_MODE=$(tpq $host "cat /sys/class/net/$port/mode")
-	if [ "$R_MODE" != "$mode" ]; then
-		fatal_error "Failed to set IPoIB mode"
-	fi
+    tp $host "echo $mode > /sys/class/net/$port/mode"
+    R_MODE=$(tpq $host "cat /sys/class/net/$port/mode")
+    if [ "$R_MODE" != "$mode" ]; then
+	fatal_error "Failed to set IPoIB mode"
+    fi
 }
 set_ipoib_up()
 {
-	local host=$1
-	local port=$2
-	local ipaddr=$3 #ip/netmask
-        local ipv6addr=$4
+    local host=$1
+    local port=$2
+    local ipaddr=$3 #ip/netmask
+    local ipv6addr=$4
 
-	tp $host "ip link set dev $port up &&
+    tp $host "ip link set dev $port up &&
+                          sleep 0.3 &&
 			  ip -4 addr flush $port &&
 			  ip addr add $ipaddr dev $port &&
 			  (ip addr add $ipv6addr/64 dev $port || true)"
 }
 set_ipoib_down()
 {
-	local host=$1
-	local port=$2
+    local host=$1
+    local port=$2
 
-	tp $host "ip link set dev $port down &&
+    tp $host "ip link set dev $port down &&
 	   		  ip -4 addr flush $port"
 }
-disable_enhanced()
+disable_mlx5_enhanced()
 {
-	local host=$1
-	tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=0"
+    local host=$1
+    tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=0"
 }
-enable_enhanced()
+enable_mlx5_enhanced()
 {
-	local host=$1
-	tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=1"
+    local host=$1
+    tp $host "rmmod mlx5_ib && modprobe mlx5_ib ipoib_enhanced=1"
 }
-reload_mlx5_ib()
-{
-	local host=$1
-	tp $host "rmmod mlx5_ib && modprobe mlx5_ib"
-}
+
 driver_resetup()
 {
     local testname=$1
@@ -89,8 +86,8 @@ driver_resetup()
     if [ $DO_MAD -eq 1 ]; then
 	juLog -name=h1_${testname}_opensm "kill_opensm $host1"
     fi
-    juLog -name=h1_${testname} "${driver_func} $host1 ${ip1_setup}"
-    juLog -name=h2_${testname} "${driver_func} $host2 ${ip2_setup}"
+    juLog -name=h1_${testname} "${driver_func} $host1 && nmcli_disable $host1 $ipport1 ${ip1_setup}"
+    juLog -name=h2_${testname} "${driver_func} $host2 && nmcli_disable $host2 $ipport2 ${ip2_setup}"
     if [ $DO_MAD -eq 1 ]; then
 	juLog -name=h1_${testname}_start_opensm "start_opensm $host1 -p 10"
         # Give some time to OpenSM
@@ -99,55 +96,115 @@ driver_resetup()
 }
 test_ping()
 {
-	local host=$1
-	local remote_addr=$2
-	local pkt_size=$3
+    local host=$1
+    local remote_addr=$2
+    local pkt_size=$3
 
-	tp $host "ip neigh flush $remote_addr && ping -fq -t 3 -c 10000 -w 10 -s $pkt_size $remote_addr"
+    tp $host "ip neigh flush $remote_addr && ping -fq -t 3 -c 10000 -w 10 -s $pkt_size $remote_addr"
 }
 
 test_ping6()
 {
-	local host=$1
-	local interface=$2
-	local remote_addr=$3
-	local pkt_size=$4
+    local host=$1
+    local interface=$2
+    local remote_addr=$3
+    local pkt_size=$4
 
-	tp $host "ip neigh flush $remote_addr && ping6 -fq -t 3 -c 10000 -w 10 -I $interface -s $pkt_size ${remote_addr}%${interface}"
+    tp $host "ip neigh flush $remote_addr && ping6 -fq -t 3 -c 10000 -w 10 -I $interface -s $pkt_size ${remote_addr}%${interface}"
 }
 
 test_sftp()
 {
-	local host=$1
-	local remote_addr=$2
+    local host=$1
+    local remote_addr=$2
 
-	# Generate a random file
-	tp $host "rm -f sftp.orig && dd if=/dev/urandom bs=1M count=64 of=sftp.orig"
-	# Copy back and forth
-	tp $host "scp sftp.orig $remote_addr:sftp.orig && scp $remote_addr:sftp.orig sftp.copy"
-	# Check file
-	tp $host "diff -q sftp.orig sftp.copy"
+    # Generate a random file
+    tp $host "rm -f sftp.orig && dd if=/dev/urandom bs=1M count=64 of=sftp.orig"
+    # Copy back and forth
+    tp $host "scp sftp.orig $remote_addr:sftp.orig && scp $remote_addr:sftp.orig sftp.copy"
+    # Check file
+    tp $host "diff -q sftp.orig sftp.copy"
 }
 
 is_connected_supported()
 {
-	local host=$1
-	local port=$2
+    local host=$1
+    local port=$2
 
-	mac_first_byte=$(tpq $host 'ip link show '$port' | grep link/infiniband | 
+    mac_first_byte=$(tpq $host 'ip link show '$port' | grep link/infiniband | 
 	 sed -e "s/.*link\/infiniband \([0-9a-f]\)[0-9a-f]:.*/\1/"')
 
-	if [ $mac_first_byte -ge 8 ]; then
-		return 0
-	else
-		return 1
-	fi
+    if [ $mac_first_byte -ge 8 ]; then
+	return 0
+    else
+	return 1
+    fi
 }
 
 is_enhanced_mode_togglable()
 {
-	local host=$1
+    local host=$1
 
-	tpq $host 'test -f /sys/module/mlx5_ib/parameters/ipoib_enhanced'
-	return $?
+    tpq $host 'test -f /sys/module/mlx5_ib/parameters/ipoib_enhanced'
+    return $?
+}
+
+ipoib_run_tests()
+{
+    local reload_driver=0
+
+    # Not necesseraly needed but in case we are running multiple tests in a row,
+    # make sure the driver is in a pristine state
+    driver_resetup "reload_kmods" reload_kmods $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
+
+    # Check if both cards support connected mode
+    if ! (is_connected_supported $HOST1 $IPPORT1 && is_connected_supported $HOST2 $IPPORT2); then
+	#  We are using a mlx5 card with enhanced mode
+	# Test if first then if possible reload the driver  with enhanced mode disabled
+	# so we can testout datagram and connected
+	for size in 511 1025 2044 8192 32768 65492; do
+	    juLog -name=h1_enhanced_ping_$size "test_ping $HOST1 $IP2 $size"
+	    juLog -name=h2_enhanced_ping_$size "test_ping $HOST2 $IP1 $size"
+	    juLog -name=h1_enhanced_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
+	    juLog -name=h2_enhanced_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
+	done
+
+	juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
+	juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
+
+	if ! (is_enhanced_mode_togglable $HOST1 && is_enhanced_mode_togglable $HOST2); then
+	    # No parameter to disable it, do not test out connected/datagram
+	    juLog -name=ipoib_skipping_connected 'echo "WARNING: Disabling datagram/connected tests as it is not supported by all HCAs (enhanced mode enabled and not togglable)"'
+	    return 0
+	fi
+	reload_driver=1
+
+	driver_resetup "disable_mlx5_enhanced" disable_mlx5_enhanced $HOST1 "" "" "" $HOST2 "" "" ""
+    fi
+
+    for mode in $(echo $IPOIB_MODES | sed -e 's/,/ /g'); do
+	juLog_fatal -name=h1_${mode}_ip_mode "set_ipoib_mode $HOST1 $IPPORT1 $mode"
+	juLog_fatal -name=h1_${mode}_ip_down "set_ipoib_down $HOST1 $IPPORT1"
+	juLog_fatal -name=h1_${mode}_ip_up   "set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
+
+	juLog_fatal -name=h2_${mode}_ip_mode "set_ipoib_mode $HOST2 $IPPORT2 $mode"
+	juLog_fatal -name=h2_${mode}_ip_down "set_ipoib_down $HOST2 $IPPORT2"
+	juLog_fatal -name=h2_${mode}_ip_up   "set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
+
+	for size in 511 1025 2044 8192 32768 65492; do
+	    juLog -name=h1_${mode}_ping_$size "test_ping $HOST1 $IP2 $size"
+	    juLog -name=h2_${mode}_ping_$size "test_ping $HOST2 $IP1 $size"
+	    juLog -name=h1_${mode}_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
+	    juLog -name=h2_${mode}_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
+	done
+
+	# TODO: Add ping tests that are expected to fail
+
+	juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
+	juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
+    done
+    if [ $reload_driver -eq 1 ]; then
+	# Put the driver back in enhanced mode and make sure IPoIB Ifs are reconfigured
+	driver_resetup "enable_mlx5_enhanced" enable_mlx5_enhanced $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
+    fi
 }

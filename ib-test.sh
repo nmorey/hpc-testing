@@ -15,64 +15,90 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DEFAULT_IP1=192.168.0.1
-DEFAULT_IP2=192.168.0.2
 DEFAULT_IPOIB_MODES="connected,datagram"
 
 export IPOIB_MODES=${IPOIB_MODES:-$DEFAULT_IPOIB_MODES}
-export IP1=${IP1:-$DEFAULT_IP1}
-export IP2=${IP2:-$DEFAULT_IP2}
 export DO_MAD=1
+export KMOD_RELOAD=0
+# Unset global variables used later to describe HCA, ports and IPS
+export IP1 IP2 IP6_1 IP6_2
+export IPPORT1 IPPORT2
+export GUID1 GUID2
+export LID1 LID2
+export HCA1 HCA2
+export IBPORT1 IBPORT2
+export SYSGUID1 SYSGUID2
 
 source $(dirname $0)/helpers/common.sh
-load_helpers $(dirname $0) "common"
-load_helpers $(dirname $0) "ib"
+load_helpers $(dirname $0) "common" "ib"
 
 usage(){
-	echo "Usage: ${0} [options] <host1> <host2>"
-	echo "Options:"
-	common_usage
-	echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is $DEFAULT_IP1)"
-	echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is $DEFAULT_IP2)"
-	echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test (default is $DEFAULT_MPI_FLAVOURS)"
-	echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
-	echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
-	echo "  -n, --no-mad                   Disable test that requires MAD support. Needed for testing over SR-IOV"
+    echo "Usage: ${0} [options] <host1> <host2>"
+    echo "Options:"
+    common_usage
+    echo "Interface configuration:"
+    echo "      --hca1 <hca name>          Select this specific HCA on host1 (default is first active)"
+    echo "      --hca2 <hca name>          Select this specific HCA on host2 (default is first active)"
+    echo "      --ip1 <ip>                 IP for IPoIB on host1 (default is current address)"
+    echo "      --ip2 <ip>                 IP for IPoIB on host2 (default is current address)"
+    echo "      --ip6-1 <ipv6>             IPv6 for IPoIB on host1 (default is current address)"
+    echo "      --ip6-2 <ipv6>             IPv6 for IPoIB on host2 (default is current address)"
+    echo "Test flags:"
+    echo "  -I, --ipoib <mode>[,<mode>...] Comma separated list of IPoIB mode to test (default is $DEFAULT_IPOIB_MODES)"
+    echo "                                 Note that connected mode maybe auto disabled if the HW does not support it"
+    echo "  -n, --no-mad                   Disable tests that requires MAD support. Needed for testing over SR-IOV"
+    echo "  -k, --reload-kmods             Force a full kmod unload/reload. Should only be used when running"
+    echo "                                 multiple tests consecutively"
 }
 
 while [ $# -ne 0 ]; do
-	common_parse $1 $2
-	ret=$?
-	if [ $ret -ne 0 ]; then
-		shift $ret
-		continue
-	fi
+    common_parse $1 $2
+    ret=$?
+    if [ $ret -ne 0 ]; then
+	shift $ret
+	continue
+    fi
 
-	case $1 in
-		--ip1)
-			IP1=$2
-			shift
-			;;
-		--ip2)
-			IP2=$2
-			shift
-			;;
-		-M|--mpi)
-			MPI_FLAVOURS=$2
-			shift
-			;;
-		-I|--ipoib)
-			IPOIB_MODES=$2
-			shift
-			;;
-		-n|--no-mad)
-			DO_MAD=0
-			;;
-		*)
-			fatal_error "Unknow argument $1"
-			;;
-	esac
-	shift
+    case $1 in
+	--hca1)
+	    HCA1=$2
+	    shift
+	    ;;
+	--hca2)
+	    HCA2=$2
+	    shift
+	    ;;
+	--ip1)
+	    IP1=$2
+	    shift
+	    ;;
+	--ip2)
+	    IP2=$2
+	    shift
+	    ;;
+	--ip6-1)
+	    IP6_1=$2
+	    shift
+	    ;;
+	--ip6-2)
+	    IP6_2=$2
+	    shift
+	    ;;
+	-I|--ipoib)
+	    IPOIB_MODES=$2
+	    shift
+	    ;;
+	-n|--no-mad)
+	    DO_MAD=0
+	    ;;
+        -k|--reload-kmods)
+            KMOD_RELOAD=1
+            ;;
+	*)
+	    fatal_error "Unknow argument $1"
+	    ;;
+    esac
+    shift
 done
 common_check
 
@@ -85,164 +111,46 @@ juLogSetProperty host2.name $HOST2
 # - Reset everything needed to mimic an after-reboot run
 #
 #########################
-phase_0(){
-	juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
-	juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
-
-	juLog -name=h1_kill_opensm "kill_opensm $HOST1"
-	juLog -name=h2_kill_opensm "kill_opensm $HOST2"
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
-		juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
-
-		# We need to sleep a little bit here to let the port reset
-		sleep 5
-	fi
-
-	juLog -name=h1_firewall_down "firewall_down $HOST1"
-	juLog -name=h2_firewall_down "firewall_down $HOST2"
-
-}
 run_phase 0 phase_0 "State Cleanup"
 
 set_properties $HOST1
 set_properties $HOST2
-juLogSetProperty $HOST1.ib_ip $IP1
-juLogSetProperty $HOST2.ib_ip $IP2
 
 #########################
 #
-# Phase 1: Fabric init
+# Phase 1-0: Fabric init
 # - Start demons (opensm, rdma-ndd)
+#
+#########################
+run_phase 1 phase_1_1 "Fabric init (1/2)"
+
+
+#########################
+#
+# Interface setup
+# - Find an active HCA if none was requested
+# - Extract HCA informations
+# - Extract IPv4 and IPv6 addresses if needed
+#
+#########################
+interface_setup
+
+#########################
+#
+# Phase 1-2: Fabric init
 # - SSH known key setup to as some tests will fail if
 #   hosts do not know each other
 # - Device status check
 #
 #########################
-phase_1_1(){
-	juLog -name=h1_rdma_ndd "setup_rdma_ndd $HOST1"
-	juLog -name=h2_rdma_ndd "setup_rdma_ndd $HOST2"
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_openSM_start "start_opensm $HOST1 -p 10"
-		# Leave some time for openSM to bring the link up
-		sleep 10
-	fi
-}
-run_phase 1 phase_1_1 "Fabric init (1/2)"
-
-# Do not wrap these as they export needed variables
-get_port $HOST1 1
-get_port $HOST2 2
-#Get IPv6 IPs
-IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_ipv6)
-IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_ipv6)
-
-# Sometimes, there is nos default IPv6 address for some reason. Generate it using the MAC
-if [ "$IP6_1" == "" ]; then
-    IP6_1=$(tpq $HOST1 "ip addr show $IPPORT1" | ip_addr_show_to_mac_ipv6)
-fi
-if [ "$IP6_2" == "" ]; then
-    IP6_2=$(tpq $HOST2 "ip addr show $IPPORT2" | ip_addr_show_to_mac_ipv6)
-fi
-
-phase_1_2(){
-        juLog_fatal -name=h1_remove_rdma_ports "disable_unused_rdma_ports $HOST1 $HCA1"
-        juLog_fatal -name=h2_remove_rdma_ports "disable_unused_rdma_ports $HOST2 $HCA2"
-
-	juLog_fatal -name=h1_disable_nm   "nmcli_disable $HOST1 $IPPORT1"
-	juLog_fatal -name=h2_disable_nm   "nmcli_disable $HOST2 $IPPORT2"
-
-	juLog_fatal -name=h1_ip_setup   "set_ipoib_down $HOST1 $IPPORT1; set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
-	juLog_fatal -name=h2_ip_setup   "set_ipoib_down $HOST2 $IPPORT2; set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
-
-	# Let IP settle down or SSH key setup might fail
-	sleep 5
-
-	juLog_fatal -name=h1_setup_ssh_keys "setup_ssh $HOST1 $IP2"
-	juLog_fatal -name=h2_setup_ssh_keys "setup_ssh $HOST2 $IP1"
-
-	juLog_fatal -name=h1_ibvinfo tp $HOST1 ibv_devinfo
-	juLog_fatal -name=h2_ibvinfo tp $HOST2 ibv_devinfo
-
-	if [ $DO_MAD -eq 1 ]; then
-		juLog_fatal -name=h1_ibdiagnet test_ibdiagnet $HOST1
-		juLog_fatal -name=h2_ibdiagnet test_ibdiagnet $HOST2
-
-		juLog -name=h1_test_nodedesc "test_nodedesc $HOST1 $GUID1 $HCA1"
-		juLog -name=h2_test_nodedesc "test_nodedesc $HOST2 $GUID2 $HCA2"
-	fi
-}
-
 run_phase 1 phase_1_2 "Fabric init (2/2)"
-
-
-juLog_fatal -name=h1_check_ipv6 "[[ \"$IP6_1\" != \"\" ]]"
-juLog_fatal -name=h2_check_ipv6 "[[ \"$IP6_2\" != \"\" ]]"
 
 #########################
 #
 # Phase 2: IPoIB
 #
 #########################
-phase_2(){
-	local reload_driver=0
-
-	driver_resetup "reload_mlx5_driver" reload_mlx5_ib $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
-
-	# Check if both cards support connected mode
-	if ! (is_connected_supported $HOST1 $IPPORT1 && is_connected_supported $HOST2 $IPPORT2); then
-	   #  We are using a mlx5 card with enhanced mode
-	   # Test if first then if possible reload the driver  with enhanced mode disabled
-	   # so we can testout datagram and connected
-		for size in 511 1025 2044 8192 32768 65492; do
-			juLog -name=h1_enhanced_ping_$size "test_ping $HOST1 $IP2 $size"
-			juLog -name=h2_enhanced_ping_$size "test_ping $HOST2 $IP1 $size"
-			juLog -name=h1_enhanced_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
-			juLog -name=h2_enhanced_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
-		done
-
-		juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
-		juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
-
-	   if !(is_enhanced_mode_togglable $HOST1 && is_enhanced_mode_togglable $HOST2); then
-		   # No parameter to disable it, do not test out connected/datagram
-		   juLog -name=ipoib_skipping_connected 'echo "WARNING: Disabling datagram/connected tests as it is not supported by all HCAs (enhanced mode enabled and not togglable)"'
-		   return 0
-	   fi
-	   reload_driver=1
-
-	   driver_resetup "disable_enhanced" disable_enhanced $HOST1 "" "" "" $HOST2 "" "" ""
-	fi
-
-	for mode in $(echo $IPOIB_MODES | sed -e 's/,/ /g'); do
-		juLog_fatal -name=h1_${mode}_ip_mode "set_ipoib_mode $HOST1 $IPPORT1 $mode"
-		juLog_fatal -name=h1_${mode}_ip_down "set_ipoib_down $HOST1 $IPPORT1"
-		juLog_fatal -name=h1_${mode}_ip_up   "set_ipoib_up $HOST1 $IPPORT1 $IP1/24 $IP6_1"
-
-		juLog_fatal -name=h2_${mode}_ip_mode "set_ipoib_mode $HOST2 $IPPORT2 $mode"
-		juLog_fatal -name=h2_${mode}_ip_down "set_ipoib_down $HOST2 $IPPORT2"
-		juLog_fatal -name=h2_${mode}_ip_up   "set_ipoib_up $HOST2 $IPPORT2 $IP2/24 $IP6_2"
-
-		for size in 511 1025 2044 8192 32768 65492; do
-		    juLog -name=h1_${mode}_ping_$size "test_ping $HOST1 $IP2 $size"
-		    juLog -name=h2_${mode}_ping_$size "test_ping $HOST2 $IP1 $size"
-		    juLog -name=h1_${mode}_ping6_$size "test_ping6 $HOST1 $IPPORT1 $IP6_2 $size"
-		    juLog -name=h2_${mode}_ping6_$size "test_ping6 $HOST2 $IPPORT2 $IP6_1 $size"
-		done
-
-		# TODO: Add ping tests that are expected to fail
-
-		juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
-		juLog -name=h1_${mode}_sftp "test_sftp $HOST1 $IP2"
-	done
-	if [ $reload_driver -eq 1 ]; then
-	    # Put the driver back in enhanced mode and make sure IPoIB Ifs are reconfigured
-	   driver_resetup "enable_enhanced" enable_enhanced $HOST1 $IPPORT1 $IP1 $IP6_1 $HOST2 $IPPORT2 $IP2 $IP6_2
-	fi
-}
-run_phase 2 phase_2 "IPoIB"
+run_phase 2 ipoib_run_tests "IPoIB"
 
 #########################
 #
@@ -250,9 +158,9 @@ run_phase 2 phase_2 "IPoIB"
 #
 #########################
 phase_3(){
-	if [ $DO_MAD -eq 1 ]; then
-		juLog -name=test_sm_failover "test_sm_failover $HOST1 $LID1 $HOST2 $LID2"
-	fi
+    if [ $DO_MAD -eq 1 ]; then
+	juLog -name=test_sm_failover "test_sm_failover $HOST1 $LID1 $HOST2 $LID2"
+    fi
 }
 run_phase 3 phase_3 "SM Failover"
 
@@ -262,7 +170,7 @@ run_phase 3 phase_3 "SM Failover"
 #
 #########################
 phase_4(){
-	juLog -name=srp_server test_srp $HOST2 $GUID2 $SYSGUID2 $HCA2 $IBPORT2 $HOST1 $GUID1 $HCA1 $IBPORT1
+    juLog -name=srp_server test_srp $HOST2 $GUID2 $SYSGUID2 $HCA2 $IBPORT2 $HOST1 $GUID1 $HCA1 $IBPORT1
 }
 run_phase 4 phase_4 "SRP"
 
@@ -272,7 +180,7 @@ run_phase 4 phase_4 "SRP"
 #
 #########################
 phase_5(){
-	juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
+    juLog -name=nfs_over_rdma test_nfs $HOST1 $IP1 $HOST2
 }
 run_phase 5 phase_5 "NFSoRDMA"
 
@@ -282,7 +190,7 @@ run_phase 5 phase_5 "NFSoRDMA"
 #
 #########################
 phase_6(){
-	juLog -name=dapl -error='DAT_' test_dapl $HOST1 $IPPORT1 $HOST2 $IPPORT2 $IP2
+    juLog -name=dapl -error='DAT_' test_dapl $HOST1 $IPPORT1 $HOST2 $IPPORT2 $IP2
 }
 run_phase 6 phase_6 "DAPL"
 
@@ -292,12 +200,12 @@ run_phase 6 phase_6 "DAPL"
 #
 #########################
 phase_7(){
-	for mode in rc uc ud srq; do
-		juLog -name=${mode}_pingpong "(
+    for mode in rc uc ud srq; do
+	juLog -name=${mode}_pingpong "(
 	  	  test_ibv_pingpong ibv_${mode}_pingpong $HOST1 $HCA1 $IBPORT1 $HOST2 $HCA2 $IBPORT2 &&
 	  	  test_ibv_pingpong ibv_${mode}_pingpong $HOST2 $HCA2 $IBPORT2 $HOST1 $HCA1 $IBPORT1
         )"
-	done
+    done
 }
 run_phase 7 phase_7 "RDMA/Verbs"
 
@@ -307,11 +215,11 @@ run_phase 7 phase_7 "RDMA/Verbs"
 #
 #########################
 phase_8(){
-	FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
-	for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
+    FLAVOURS=$(mpi_get_flavors $HOST1 $MPI_FLAVOURS)
+    for flavour in $(echo $FLAVOURS | sed -e 's/,/ /g'); do
 
-		juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2
-	done
+	juLog -name=mpitests_${flavour} test_mpi ${flavour} $HOST1 $IP1 $IP2
+    done
 }
 run_phase 8 phase_8 "MPI"
 
@@ -321,7 +229,7 @@ run_phase 8 phase_8 "MPI"
 #
 #########################
 phase_9(){
-	juLog -name=fabtests test_libfabric $HOST1 $IP1 $IP2
+    juLog -name=fabtests test_libfabric $HOST1 $IP1 $IP2
 }
 run_phase 9 phase_9 "libfabric"
 
@@ -332,7 +240,7 @@ run_phase 9 phase_9 "libfabric"
 #
 #########################
 phase_10(){
-	juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
+    juLog -name=nvme test_nvme $HOST2 $IP2 $HOST1
 }
 run_phase 10 phase_10 "nvme"
 

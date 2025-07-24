@@ -23,15 +23,15 @@
 
 get_package_list()
 {
-	PACKAGE_LIST=$(get_common_package_list $1)
-	PACKAGE_LIST+="opensm"
-	echo $PACKAGE_LIST
+    PACKAGE_LIST=$(get_common_package_list $1)
+    PACKAGE_LIST+="opensm"
+    echo $PACKAGE_LIST
 }
 
 kill_opensm()
 {
-	local host=$1
-	tp $host 'killall opensm || true; sleep 1; killall -9 opensm || true';
+    local host=$1
+    tp $host 'killall opensm || true; sleep 1; killall -9 opensm || true';
 }
 
 do_reset_all_ports()
@@ -49,23 +49,27 @@ reset_all_ports()
     tp_fun $host do_reset_all_ports
 }
 
-do_disable_unused_rdma_ports()
-{
-    local used_interface=$1
+phase_0(){
+    juLog_fatal -name=h1_setup_requirements "setup_requirements $HOST1"
+    juLog_fatal -name=h2_setup_requirements "setup_requirements $HOST2"
 
-    cd /sys/class/infiniband
-    for hca in *; do
-        if [ "$hca" == "$used_interface" ]; then
-            continue
-        fi
-        basename $(readlink -f "${hca}/device") > "${hca}/device/driver/unbind"
-        true
-    done
-}
-disable_unused_rdma_ports()
-{
-    local host=$1
-    local used_interface=$2
+    if [ $KMOD_RELOAD -eq 1 ]; then
+        juLog_fatal -name=h1_reload_kmods "reload_kmods $HOST1"
+        juLog_fatal -name=h2_reload_kmods "reload_kmods $HOST2"
+    fi
 
-    tp_fun $host do_disable_unused_rdma_ports $used_interface
+    juLog -name=h1_kill_opensm "kill_opensm $HOST1"
+    juLog -name=h2_kill_opensm "kill_opensm $HOST2"
+
+    if [ $DO_MAD -eq 1 ]; then
+	juLog -name=h1_reset_all_ports "reset_all_ports $HOST1"
+	juLog -name=h2_reset_all_ports "reset_all_ports $HOST2"
+
+	# We need to sleep a little bit here to let the port reset
+	sleep 5
+    fi
+
+    juLog -name=h1_firewall_down "firewall_down $HOST1"
+    juLog -name=h2_firewall_down "firewall_down $HOST2"
+
 }

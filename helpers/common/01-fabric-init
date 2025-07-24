@@ -17,49 +17,76 @@
 
 setup_ssh()
 {
-	local host=$1
-	local remote_ip=$2
+    local host=$1
+    local remote_ip=$2
 
-	# Make sure we accepted the remote SSH key so MPI can work
-	tp $host "touch .ssh/known_hosts &&
+    # Make sure we accepted the remote SSH key so MPI can work
+    tp $host "touch .ssh/known_hosts &&
 	   		  sed -i '/^$remote_ip /d' .ssh/known_hosts &&
 			  ssh-keyscan $remote_ip >> .ssh/known_hosts"
 }
 
 nmcli_disable()
 {
-	local host=$1
-        local port=$2
-	tp $host "nmcli device set $port managed no || true"
+    local host=$1
+    local port=$2
+    tp $host "nmcli device set $port managed no || true"
 }
 
 get_srdma_port()
 {
-	local host=$1
-	local host_id=$2
-	local port_type=$3
-	local eth=$(eval echo \$IPPORT$host_id)
+    local host=$1
+    local host_id=$2
+    local port_type=$3
+    local eth
 
-	tpq $host "rdma link del ${port_type}0 2>/dev/null || true"
-	tpq $host "rdma link add ${port_type}0 type ${port_type} netdev $eth"
+    eth=$(eval echo \$IPPORT$host_id)
+    tpq $host "rdma link del ${port_type}0 2>/dev/null || true"
+    tpq $host "rdma link add ${port_type}0 type ${port_type} netdev $eth"
 
-	res=$(tpq $host "rdma link show" | grep $eth)
-	if [ "$res" == "" ]; then
-		fatal_error "Failed to find an active port on $host"
-	fi
+    res=$(tpq $host "rdma link show" | grep $eth)
+    if [ "$res" == "" ]; then
+	fatal_error "Failed to find an active port on $host"
+    fi
 
-	ip=$(echo $res | awk '{ print $5}')
-	rdma_if=$(echo $res | awk '{ print $2}' | sed -e 's/\/.*//')
-	port=$(echo $res | awk '{ print $2}' | sed -e 's/.*\///')
+    ip=$(echo $res | awk '{ print $5}')
+    rdma_if=$(echo $res | awk '{ print $2}' | sed -e 's/\/.*//')
+    port=$(echo $res | awk '{ print $2}' | sed -e 's/.*\///')
 
-	eval export HCA$host_id=$rdma_if
-	eval export IBPORT$host_id=$port
+    eval export HCA$host_id=$rdma_if
+    eval export IBPORT$host_id=$port
 
-	ip=$(tpq $host "ip addr show $eth" | ip_addr_show_to_ip)
-	eval export IP$host_id=$ip
+    ip=$(tpq $host "ip addr show $eth" | ip_addr_show_to_ip)
+    eval export IP$host_id=$ip
 
-	juLogSetProperty $host.ip_if $ip
-	juLogSetProperty $host.port $rdma_if
+    juLogSetProperty $host.ip_if $ip
+    juLogSetProperty $host.port $rdma_if
 
-	echo "[SUCCESS] Host $host uses interface $rdma_if."
+    echo "[SUCCESS] Host $host uses interface $rdma_if."
+}
+
+do_disable_unused_rdma_ports()
+{
+    local used_interface=$1
+
+    cd /sys/class/infiniband || return 0
+    for hca in $(ls); do
+        if [ "$hca" == "$used_interface" ]; then
+            continue
+        fi
+        if [ -e "${hca}/device" ]; then
+            basename $(readlink -f "${hca}/device") > "${hca}/device/driver/unbind"
+        else
+            rdma link del "${hca}"
+        fi
+    done
+    true
+}
+
+disable_unused_rdma_ports()
+{
+    local host=$1
+    local used_interface=$2
+
+    tp_fun $host do_disable_unused_rdma_ports $used_interface
 }

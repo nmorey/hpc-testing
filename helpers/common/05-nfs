@@ -39,7 +39,7 @@ nfs_do_mount()
     modprobe xprtrdma
     mkdir -p /tmp/RAM
     mount -o rdma,port=20049 $server_ip:$mountpoint /tmp/RAM
-    (cat /proc/mounts | grep /tmp/RAM  | grep proto=rdma)
+    (grep /tmp/RAM < /proc/mounts | grep proto=rdma)
     sleep 1
     dd if=/tmp/RAM/input bs=1M count=1024 of=/tmp/RAM/output
     diff -q /tmp/RAM/input /tmp/RAM/output
@@ -57,29 +57,29 @@ nfs_server_clean()
 
 test_nfs()
 {
-	local server=$1
-	local server_ip=$2
-	local client=$3
+    local server=$1
+    local server_ip=$2
+    local client=$3
 
-	tp $client "! (mount | grep /tmp/RAM) || umount -f /tmp/RAM"
+    tp $client "! (mount | grep /tmp/RAM) || umount -f /tmp/RAM"
 
-	subnet=$(echo $server_ip | sed -e 's/\.[0-9]\+$/.0/')
-	tp_fun $server nfs_do_export $subnet
+    subnet=$(echo $server_ip | sed -e 's/\.[0-9]\+$/.0/')
+    tp_fun $server nfs_do_export $subnet
 
-        mountpoint=""
-	case $(get_suse_version $server) in
-            16.0)
-                # NFSv4
-                mountpoint="/"
-                ;;
-            *)
-                mountpoint="/tmp/RAM"
-                ;;
-        esac
-	tp_fun $client nfs_do_mount "$server_ip" "$mountpoint"
-	tp $server "diff -q /tmp/RAM/input /tmp/RAM/output"
+    mountpoint=""
+    case $(get_suse_version $server) in
+        16.0)
+            # NFSv4
+            mountpoint="/"
+            ;;
+        *)
+            mountpoint="/tmp/RAM"
+            ;;
+    esac
+    tp_fun $client nfs_do_mount "$server_ip" "$mountpoint"
+    tp $server "diff -q /tmp/RAM/input /tmp/RAM/output"
 
-	# Cleanup
-	tp $client "umount -f /tmp/RAM"
-	tp $server nfs_server_clean
+    # Cleanup
+    tp $client "umount -f /tmp/RAM"
+    tp_fun $server nfs_server_clean
 }

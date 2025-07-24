@@ -91,18 +91,19 @@ srp_test_and_clear_server()
 test_srp()
 {
     local srp_server=$1
-    local server_guid=$(echo $2| sed -e 's/0x//')
-    local server_sysguid=$(echo $3 | sed -e 's/0x//')
+    local server_guid=${2/0x/}
+    local server_sysguid=${3/0x/}
     local server_wwn="fe80000000000000${server_guid}"
     local server_sys_wwn="fe80000000000000${server_sysguid}"
     local server_board=$4
     local server_port=$5
 
     local client=$6
-    local client_guid=$(echo $7 |  sed -e 's/0x//')
+    local client_guid=${7/0x/}
     local client_wwn="0000000000000000${client_guid}"
     local client_board=$8
     local client_port=$9
+
 
     if [ "$IN_VM" == "1" ]; then
         juLog -name=srp_skipping 'echo "Skipping SRP test as it does not work with SRIOV"'

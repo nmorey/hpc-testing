@@ -17,69 +17,70 @@
 
 _check_sm_lid()
 {
-	local host=$1
-	local expected_lid=$2
+    local host=$1
+    local expected_lid=$2
+    local sm_lid
 
-	for i in $(seq 1 10); do
-		SM_LID=$(tpq $host sminfo | sed -e 's/.*sm lid \([0-9]\+\) sm guid.*/\1/')
-		if [ "$SM_LID" == "sminfo: iberror: failed: query" ]; then
-			#New SM is still not up
-			echo "SM still not up... Waiting a bit more .."
-			sleep 2
-			continue
-		fi
-		if [ "$SM_LID" != "$expected_lid" ]; then
-			echo "WARNING:On host $host: SM is on LID $SM_LID instead of $expected_lid"
-			echo "Waiting a bit to see how it goes..."
-			sleep 2
-			continue
-		fi
-		# We have the right SM lid
-		return 0
-	done
-	if [ "$SM_LID" != "$expected_lid" ]; then
-		fatal_error "On host $host: SM is on LID $SM_LID instead of $expected_lid"
+    for i in $(seq 1 10); do
+	sm_lid=$(tpq $host sminfo | sed -e 's/.*sm lid \([0-9]\+\) sm guid.*/\1/')
+	if [ "$sm_lid" == "sminfo: iberror: failed: query" ]; then
+	    #New SM is still not up
+	    echo "SM still not up... Waiting a bit more .. ($i/10)"
+	    sleep 2
+	    continue
 	fi
+	if [ "$sm_lid" != "$expected_lid" ]; then
+	    echo "WARNING:On host $host: SM is on LID $sm_lid instead of $expected_lid"
+	    echo "Waiting a bit to see how it goes..."
+	    sleep 2
+	    continue
+	fi
+	# We have the right SM lid
+	return 0
+    done
+    if [ "$sm_lid" != "$expected_lid" ]; then
+	fatal_error "On host $host: SM is on LID $sm_lid instead of $expected_lid"
+    fi
 }
 
 test_sm_failover()
 {
-	local host1=$1
-	local lid1=$2
-	local host2=$3
-	local lid2=$4
+    local host1=$1
+    local lid1=$2
+    local host2=$3
+    local lid2=$4
 
-	# Kill any SM just in case
-	kill_opensm $host1
+    # Kill any SM just in case
+    kill_opensm $host1
+    kill_opensm $host2
+
+    # Generate configuration files to reduce fail over delays
+    for host in $host1 $host2; do
+	tp $host 'echo -e "sminfo_polling_timeout 2000\npolling_retry_number 2" > hpc-testing-opensm.conf'
+    done
+    start_opensm $host1 -p 5 -F hpc-testing-opensm.conf
+    sleep 5
+
+    _check_sm_lid $host1 $lid1
+    _check_sm_lid $host2 $lid1
+
+    #Run a bunch of time to make sure it really works
+    for iter in $(seq 1 5); do
+	echo "Migration test $iter"
+	start_opensm $host2 -p 10 -F hpc-testing-opensm.conf
+	# Leave some time for the migration to work
+	sleep 5
+
+	_check_sm_lid $host1 $lid2
+	_check_sm_lid $host2 $lid2
+
+	echo "Failover test $iter"
+	# Kill SM on H2
 	kill_opensm $host2
-
-	# Generate configuration files to reduce fail over delays
-	for host in $host1 $host2; do
-		tp $host 'echo -e "sminfo_polling_timeout 2000\npolling_retry_number 2" > hpc-testing-opensm.conf'
-	done
-	start_opensm $host1 -p 5 -F hpc-testing-opensm.conf
+	# Leave time for the fail over
 	sleep 5
 
 	_check_sm_lid $host1 $lid1
 	_check_sm_lid $host2 $lid1
-
-	#Run a bunch of time to make sure it really works
-	for iter in $(seq 1 5); do
-		echo "Migration test $iter"
-		start_opensm $host2 -p 10 -F hpc-testing-opensm.conf
-		# Leave some time for the migration to work
-		sleep 5
-
-		_check_sm_lid $host1 $lid2
-		_check_sm_lid $host2 $lid2
-
-		echo "Failover test $iter"
-		# Kill SM on H2
-		kill_opensm $host2
-		# Leave time for the fail over
-		sleep 5
-
-		_check_sm_lid $host1 $lid1
-		_check_sm_lid $host2 $lid1
-	done
+    done
 }
