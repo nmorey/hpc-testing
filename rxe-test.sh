@@ -23,8 +23,7 @@ export IPPORT2=""
 export DO_MAD=0
 
 source $(dirname $0)/helpers/common.sh
-load_helpers $(dirname $0) "common"
-load_helpers $(dirname $0) "rxe"
+load_helpers $(dirname $0) "common" "rxe"
 
 usage(){
     echo "Usage: ${0} [options] <host1> <host2>"

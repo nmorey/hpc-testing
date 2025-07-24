@@ -122,7 +122,7 @@ tpq()
 	set +e
     else
 	set -e
-        ${SSH_COMMAND} $ip  "$@"
+        ${SSH_COMMAND} "$ip" "$@"
 	ret=$?
 	set +e
     fi
@@ -141,12 +141,18 @@ tpq_fun()
 load_helpers()
 {
     local topdir=$1
-    local test_type=$2
+    local test_type
     local helper
 
-    source ${topdir}/helpers/julog.sh
-    for helper in $(ls ${topdir}/helpers/${test_type}/[0-9][0-9]* | grep -E -v '.*~$'); do
-	source ${helper}
+    source "${topdir}/helpers/julog.sh"
+    shift 1
+
+    while [ "$#" -gt 0 ]; do
+        test_type=$1
+        for helper in $(ls "${topdir}/helpers/${test_type}/"[0-9][0-9]* | grep -E -v '.*~$'); do
+	    source ${helper}
+        done
+        shift
     done
 }
 

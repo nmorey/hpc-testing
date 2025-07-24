@@ -30,8 +30,7 @@ export IBPORT1 IBPORT2
 export SYSGUID1 SYSGUID2
 
 source $(dirname $0)/helpers/common.sh
-load_helpers $(dirname $0) "common"
-load_helpers $(dirname $0) "ib"
+load_helpers $(dirname $0) "common" "ib"
 
 usage(){
     echo "Usage: ${0} [options] <host1> <host2>"
