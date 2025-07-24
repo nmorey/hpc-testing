@@ -44,7 +44,7 @@ eVal() {
 juLogRefreshFile() {
   ## testsuite block
   cat <<EOF > "$juDIR/TEST-$suite.xml"
-  <testsuite failures="0" name="$suite" tests="1" errors="$errors" time="$total" hostname="$(hostname)" timestamp="$timestamp">
+  <testsuite failures="0" name="$suite" tests="$asserts" errors="$errors" time="$total" hostname="$(hostname)" timestamp="$timestamp">
     <properties>$properties
     </properties>
     $content
