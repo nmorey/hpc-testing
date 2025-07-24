@@ -233,7 +233,7 @@ common_parse(){
 	    return 1
 	    ;;
         -s|--suite)
-            suite=$2
+            juSUITE=$2
             return 2
             ;;
 	--help|-h)

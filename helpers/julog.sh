@@ -21,45 +21,46 @@
 ###     - Configure hudson to parse junit files from the generated folder
 ###
 
-asserts=00; errors=0; total=0; content=""
-errored_tests=""
-properties=""
-classname="default"
-timestamp=$(date -u '+%Y-%m-%dT%H:%M:%S')
+juASSERTS=00; juERRORS=0; juTOTALTIME=0; juCONTENT=""
+juERRORED_TESTS=""
+juPROPERTIES=""
+juCLASSNAME="default"
+juTIMESTAMP=$(date -u '+%Y-%m-%dT%H:%M:%S')
 
 # create output folder
 juDIR=${CIRCLE_TEST_REPORTS:-`pwd`/results}
 mkdir -p "$juDIR" || exit
 
 # The name of the suite is calculated based in your script name
-suite=`basename $0 2> /dev/null | sed -e 's/.sh$//' | tr "." "_"`
+juSUITE=`basename $0 2> /dev/null | sed -e 's/.sh$//' | tr "." "_"`
 
 # A wrapper for the eval method which allows catching seg-faults and use tee
-errfile=/tmp/evErr.$$.log
+juERRFILE=/tmp/evErr.$$.log
+
 eVal() {
   (eval "$1")
-  echo $? | tr -d "\n" >$errfile
+  echo $? | tr -d "\n" >$juERRFILE
 }
 
 juLogRefreshFile() {
   ## testsuite block
-  cat <<EOF > "$juDIR/TEST-$suite.xml"
-  <testsuite failures="0" name="$suite" tests="$asserts" errors="$errors" time="$total" hostname="$(hostname)" timestamp="$timestamp">
-    <properties>$properties
+  cat <<EOF > "$juDIR/TEST-$juSUITE.xml"
+  <testsuite failures="0" name="$juSUITE" tests="$juASSERTS" errors="$juERRORS" time="$juTOTALTIME" hostname="$(hostname)" timestamp="$juTIMESTAMP">
+    <properties>$juPROPERTIES
     </properties>
-    $content
+    $juCONTENT
   </testsuite>
 EOF
 }
 
 juLogSetProperty() {
-	properties="$properties
+	juPROPERTIES="$juPROPERTIES
         <property name=\"$1\" value=\"$2\" />"
 	juLogRefreshFile
 }
 
 juLogSetClassName() {
-	classname="$1"
+	juCLASSNAME="$1"
 }
 
 # Method to clean old tests
@@ -75,7 +76,7 @@ juLog() {
   local ya="" icase="" name="" ereg="" icase="" cmd=""
   while [ -z "$ya" ]; do
     case "$1" in
-      -name=*)   name=$asserts-`echo "$1" | sed -e 's/-name=//'`;   shift;;
+      -name=*)   name=$juASSERTS-`echo "$1" | sed -e 's/-name=//'`;   shift;;
       -ierror=*) ereg=`echo "$1" | sed -e 's/-ierror=//'`; icase="-i"; shift;;
       -error=*)  ereg=`echo "$1" | sed -e 's/-error=//'`;  shift;;
       *)         ya=1;;
@@ -84,7 +85,7 @@ juLog() {
 
   # use first arg as name if it was not given
   if [ -z "$name" ]; then
-    name="$asserts-$1"
+    name="$juASSERTS-$1"
   fi
 
   # calculate command to eval
@@ -100,15 +101,15 @@ juLog() {
   outf=/var/tmp/ju$$.txt
   >$outf
   echo ""                         | tee -a $outf
-  echo "[RUNNING][$suite][$name] $cmd" | tee -a $outf
+  echo "[RUNNING][$juSUITE][$name] $cmd" | tee -a $outf
   ini=`date +%s.%N`
   if [ "$VERBOSE" != "" ]; then
 	  eVal "$cmd" 2>&1 | tee -a $outf
   else
 	  eVal "$cmd" >> $outf 2>&1
   fi
-  evErr=`cat $errfile`
-  rm -f $errfile
+  evErr=`cat $juERRFILE`
+  rm -f $juERRFILE
   end=`date +%s.%N`
   echo "+++ exit code: $evErr"    | tee -a $outf
 
@@ -122,11 +123,11 @@ juLog() {
   rm -f $outf
 
   # calculate vars
-  asserts=`expr $asserts + 1`
-  asserts=`printf "%.2d" $asserts`
-  errors=`expr $errors + $err`
+  juASSERTS=`expr $juASSERTS + 1`
+  juASSERTS=`printf "%.2d" $juASSERTS`
+  juERRORS=`expr $juERRORS + $err`
   time=`echo $end - $ini | bc`
-  total=`echo $total + $time | bc`
+  juTOTALTIME=`echo $juTOTALTIME + $time | bc`
 
   # write the junit xml report
   ## failure tag
@@ -134,15 +135,15 @@ juLog() {
       failure=""
   else
       failure="<failure type=\"ScriptError\" message=\"$name failed\"></failure>"
-      errored_tests="${errored_tests} - $name\n"
+      juERRORED_TESTS="${juERRORED_TESTS} - $name\n"
   fi
   tcerr=""
   if [ -n "$failure" ]; then
-  	tcerr="errors=\"1\""
+  	tcerr="juERRORS=\"1\""
   fi
   ## testcase tag
-  content="$content
-    <testcase name=\"$name\" $tcerr time=\"$time\" classname=\"$classname\">
+  juCONTENT="$juCONTENT
+    <testcase name=\"$name\" $tcerr time=\"$time\" classname=\"$juCLASSNAME\">
         $failure
         <system-out>
 <![CDATA[
@@ -158,13 +159,13 @@ $out
 }
 juLog_summary()
 {
-	if [ $? -eq 0 -a $errors -eq 0 ]; then
-		echo "[SUCCESS][$suite] Testsuite summary: tests=$asserts errors=$errors time=$total"
+	if [ $? -eq 0 -a $juERRORS -eq 0 ]; then
+		echo "[SUCCESS][$juSUITE] Testsuite summary: tests=$juASSERTS errors=$juERRORS time=$juTOTALTIME"
 		exit 0
 	else
-		echo "[FAILURE][$suite] Testsuite summary: tests=$asserts errors=$errors time=$total"
+		echo "[FAILURE][$juSUITE] Testsuite summary: tests=$juASSERTS errors=$juERRORS time=$juTOTALTIME"
 		echo "List of failed tests:"
-		echo -en $errored_tests
+		echo -en $juERRORED_TESTS
 		exit 1
 	fi
 }
@@ -173,7 +174,7 @@ trap juLog_summary EXIT
 juLog_fatal() {
 	juLog "$@"
 	if [ $? -ne 0 ]; then
-		echo "[ERROR][$suite] Fatal failure. Exiting..." >&2
+		echo "[ERROR][$juSUITE] Fatal failure. Exiting..." >&2
 		exit 1
 	fi
 }
