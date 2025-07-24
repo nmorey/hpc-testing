@@ -19,17 +19,18 @@ _check_sm_lid()
 {
     local host=$1
     local expected_lid=$2
+    local sm_lid
 
     for i in $(seq 1 10); do
-	SM_LID=$(tpq $host sminfo | sed -e 's/.*sm lid \([0-9]\+\) sm guid.*/\1/')
-	if [ "$SM_LID" == "sminfo: iberror: failed: query" ]; then
+	sm_lid=$(tpq $host sminfo | sed -e 's/.*sm lid \([0-9]\+\) sm guid.*/\1/')
+	if [ "$sm_lid" == "sminfo: iberror: failed: query" ]; then
 	    #New SM is still not up
-	    echo "SM still not up... Waiting a bit more .."
+	    echo "SM still not up... Waiting a bit more .. ($i/10)"
 	    sleep 2
 	    continue
 	fi
-	if [ "$SM_LID" != "$expected_lid" ]; then
-	    echo "WARNING:On host $host: SM is on LID $SM_LID instead of $expected_lid"
+	if [ "$sm_lid" != "$expected_lid" ]; then
+	    echo "WARNING:On host $host: SM is on LID $sm_lid instead of $expected_lid"
 	    echo "Waiting a bit to see how it goes..."
 	    sleep 2
 	    continue
@@ -37,8 +38,8 @@ _check_sm_lid()
 	# We have the right SM lid
 	return 0
     done
-    if [ "$SM_LID" != "$expected_lid" ]; then
-	fatal_error "On host $host: SM is on LID $SM_LID instead of $expected_lid"
+    if [ "$sm_lid" != "$expected_lid" ]; then
+	fatal_error "On host $host: SM is on LID $sm_lid instead of $expected_lid"
     fi
 }
 

@@ -172,7 +172,7 @@ ipoib_run_tests()
 	juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
 	juLog -name=h1_enhanced_sftp "test_sftp $HOST1 $IP2"
 
-	if !(is_enhanced_mode_togglable $HOST1 && is_enhanced_mode_togglable $HOST2); then
+	if ! (is_enhanced_mode_togglable $HOST1 && is_enhanced_mode_togglable $HOST2); then
 	    # No parameter to disable it, do not test out connected/datagram
 	    juLog -name=ipoib_skipping_connected 'echo "WARNING: Disabling datagram/connected tests as it is not supported by all HCAs (enhanced mode enabled and not togglable)"'
 	    return 0

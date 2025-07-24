@@ -54,9 +54,9 @@ extract_port_info(){
 	res=$(/usr/sbin/ibstat $board $port)
 	status=$(echo "$res" | grep "State:" | awk "{print \$NF}")
 	if [ "$status" == "Active" -o "$selected_hca" != "" ]; then
-	    pci_id=$(basename $(readlink -f /sys/class/infiniband/${board}/device))
+	    pci_id=$(basename "$(readlink -f /sys/class/infiniband/${board}/device)")
 	    for netif in $(ls /sys/class/net/); do
-		netif_pci_id=$(basename $(readlink -f /sys/class/net/${netif}/device))
+		netif_pci_id=$(basename "$(readlink -f /sys/class/net/${netif}/device)")
 		if [ "$pci_id" == "$netif_pci_id" ]; then
 		    ipoib_if=$netif
 		    break
@@ -78,7 +78,6 @@ get_port()
     local selected_hca=$3
     local res
 
-    local data
     res=$(tpq_fun $host extract_port_info "$selected_hca")
 
     if [ "$res" == "" ]; then
@@ -89,7 +88,7 @@ get_port()
         fi
     fi
 
-    read -a array <<< "$res"
+    read -r -a array <<< "$res"
 
     eval export IPPORT$host_id=${array[0]}
     eval export GUID$host_id=${array[1]}
@@ -218,9 +217,6 @@ ipoib_setup_one(){
 }
 
 interface_setup(){
-    local set_ip1=0
-    local set_ip2=0
-
     get_port $HOST1 1 $HCA1
     ipoib_setup_one $HOST1 1 $IPPORT1 $IP1 $IP6_1
 

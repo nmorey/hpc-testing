@@ -72,8 +72,9 @@ mpi_get_flavors()
 {
     local host=$1
     local flavours=$2
-    local suse_version=$(get_suse_version $host)
+    local suse_version
 
+    suse_version=$(get_suse_version $host)
     # Generate default flavour list if none is provided
     if [ "$flavours" != "" ]; then
         echo $flavours

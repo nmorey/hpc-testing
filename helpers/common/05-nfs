@@ -39,7 +39,7 @@ nfs_do_mount()
     modprobe xprtrdma
     mkdir -p /tmp/RAM
     mount -o rdma,port=20049 $server_ip:$mountpoint /tmp/RAM
-    (cat /proc/mounts | grep /tmp/RAM  | grep proto=rdma)
+    (grep /tmp/RAM < /proc/mounts | grep proto=rdma)
     sleep 1
     dd if=/tmp/RAM/input bs=1M count=1024 of=/tmp/RAM/output
     diff -q /tmp/RAM/input /tmp/RAM/output

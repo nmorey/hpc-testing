@@ -21,6 +21,7 @@ test_dapl(){
     local host2=$3
     local ib2=$4
     local ip2=$5
+    local dapl_name1 dapl_name2
 
     case $(get_suse_version $host1) in
         16.0)
@@ -30,8 +31,8 @@ test_dapl(){
             ;;
     esac
 
-    local dapl_name1=$(tpq $host1 "grep '$ib1' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
-    local dapl_name2=$(tpq $host2 "grep '$ib2' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
+    dapl_name1=$(tpq $host1 "grep '$ib1' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
+    dapl_name2=$(tpq $host2 "grep '$ib2' /etc/dat.conf | head -n 1 | awk  '{print \$1}'")
 
     if [ "$dapl_name1" == "" -o "$dapl_name2" == "" ]; then
         echo "Failed to get DAPl parameters"

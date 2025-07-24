@@ -22,7 +22,7 @@
 #########################
 fatal_error()
 {
-    echo -e "ERROR:" $* >&2
+    echo -e "ERROR:" "$@" >&2
     exit 1
 }
 
@@ -52,9 +52,10 @@ ip_addr_show_to_dev()
 tp_check_local()
 {
     local host=$1
-    local varname=IS_LOCAL_$(echo $host | tr '.' '_')
+    local varname
     local ip
 
+    varname=IS_LOCAL_$(echo $host | tr '.' '_')
     # Check if the IP is local and store the value
     if [ "${!varname}" == "" ]; then
 	export ${varname}=1
@@ -86,7 +87,7 @@ tp()
 	)
 	set +e
     else
-        echo "ssh $ip $@"
+        echo "ssh $ip $*"
         set -e
         cat <<EOF | ${SSH_COMMAND} $ip "bash -"
 shopt -s huponexit
@@ -103,7 +104,7 @@ tp_fun()
     shift
     local fn=$1
     shift
-    tp $ip "$(declare -f $fn); $fn $@"
+    tp $ip "$(declare -f $fn); $fn" "$@"
 }
 
 tpq()
@@ -135,7 +136,7 @@ tpq_fun()
     shift
     local fn=$1
     shift
-    tpq $ip "$(declare -f $fn); $fn $@"
+    tpq $ip "$(declare -f $fn); $fn" "$@"
 }
 
 load_helpers()
@@ -171,20 +172,21 @@ run_phase(){
 	return 0
     else
 	echo "*******************************"
-	echo "*** Phase $phase:" $*
+	echo "*** Phase $phase: $*"
 	echo "*******************************"
 	eval $func
 	status=$?
 	echo "*******************************"
-	echo "*** End of phase $phase:" $* " Status=$status"
+	echo "*** End of phase $phase: $* Status=$status"
 	echo "*******************************"
     fi
 }
 
 get_suse_version(){
     local host=$1
-    local varname=SUSE_VERSION_$(echo $host | tr '.' '_')
+    local varname
 
+    varname=SUSE_VERSION_$(echo $host | tr '.' '_')
     if [ "${!varname}" == "" ]; then
 	export ${varname}=$(tpq $host 'source /etc/os-release; echo $VERSION_ID')
     fi
@@ -211,7 +213,7 @@ common_usage(){
     echo "  -p, --phase <#phase>           Launch only this phase"
     echo "  -v, --verbose                  Display test logs in console."
     echo "      --in-vm                    Test is being run in a virtual machine"
-    echo "  -s, --suite <name>             Set JUnit testsuite name"
+    echo "  -S, --suite <name>             Set JUnit testsuite name"
     echo "  -M, --mpi <mpi>[,<mpi>...]     Comma separated list of MPI flavours to test"
 
 }
@@ -239,7 +241,7 @@ common_parse(){
 	    IN_VM=1
 	    return 1
 	    ;;
-        -s|--suite)
+        -S|--suite)
             juSUITE=$2
             return 2
             ;;

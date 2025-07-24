@@ -95,7 +95,7 @@ test_nvme(){
     local server_ip=$2
     local client=$3
 
-    cat helpers/ib/nvmet.json | tpq $server 'cat > hpc-nvmet.json'
+    tpq $server 'cat > hpc-nvmet.json' < helpers/ib/nvmet.json
 
     tp_fun $client nvme_client_pre_cleanup
     tp_fun $server nvme_setup_server $server_ip

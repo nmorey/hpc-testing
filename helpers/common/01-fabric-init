@@ -38,8 +38,9 @@ get_srdma_port()
     local host=$1
     local host_id=$2
     local port_type=$3
-    local eth=$(eval echo \$IPPORT$host_id)
+    local eth
 
+    eth=$(eval echo \$IPPORT$host_id)
     tpq $host "rdma link del ${port_type}0 2>/dev/null || true"
     tpq $host "rdma link add ${port_type}0 type ${port_type} netdev $eth"
 
@@ -68,7 +69,7 @@ do_disable_unused_rdma_ports()
 {
     local used_interface=$1
 
-    cd /sys/class/infiniband
+    cd /sys/class/infiniband || return 0
     for hca in $(ls); do
         if [ "$hca" == "$used_interface" ]; then
             continue
