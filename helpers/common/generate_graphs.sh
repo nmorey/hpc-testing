@@ -61,12 +61,12 @@ for i in $(seq 2 $num_lines); do
 
     # Generate the plot using gnuplot
     gnuplot <<- EOF
-        set terminal pngcairo size 1024,768 enhanced font 'Verdana,10'
-        set output "${test_name}.png"
+        set terminal svg enhanced size 2000 1000 font 'Verdana,10' background rgb 'white'
+        set output "${test_name}.svg"
         set title "${test_name}"
         set xlabel "Size (bytes)"
         set ylabel "${unit}"
-        set key top left
+        set key outside
         set logscale x 2
         $logscale_y
         plot $plot_command
