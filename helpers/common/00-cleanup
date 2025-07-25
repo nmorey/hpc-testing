@@ -128,9 +128,10 @@ remove_kmods()
 
 do_load_kmods(){
     local mod
-    set +e
     for mod in $KMOD_LIST; do
-        modprobe $mod
+        if modprobe -nq $mod; then
+            modprobe $mod || return 1
+        fi
     done
 }
 load_kmods(){
