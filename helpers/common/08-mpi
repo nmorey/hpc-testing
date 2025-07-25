@@ -81,13 +81,21 @@ mpi_get_flavors()
         return 0
     fi
     case $suse_version in
-	12.3|12.4|12.5)
+	12.3|12.4)
 	    flavours="mvapich2,openmpi"
+	    ;;
+	12.5)
+            # Should contain mvapich2, but currently broken
+	    flavours="openmpi"
 	    ;;
 	15|15.1)
 	    flavours="mvapich2,mpich,openmpi"
 	    ;;
-	15.2|15.3)
+	15.2)
+            # Should contain openmpi3, but currently broken
+	    flavours="mvapich2,mpich,openmpi2"
+	    ;;
+	15.3)
 	    flavours="mvapich2,mpich,openmpi2,openmpi3"
 	    ;;
 	15.4)
