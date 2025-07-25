@@ -64,7 +64,7 @@ nvme_run_client()
     rm -f /etc/nvme/hostid
     nvme discover -t rdma -a "$server_ip" -s 4420
     nvme_dev_pre=$(lsblk | grep nvme | cut -d' ' -f1 | sort)
-    nvme connect -t rdma -n testnqn -a "$server_ip" -s 4420 -v
+    nvme connect -t rdma -n testnqn -a "$server_ip" -s 4420
     nvme_dev_post=$(lsblk | grep nvme | cut -d' ' -f1 | sort)
     sleep 1
     block_device=$(comm -13 <(echo $nvme_dev_pre) <(echo $nvme_dev_post))
