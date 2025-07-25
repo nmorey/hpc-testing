@@ -247,7 +247,7 @@ common_parse(){
             ;;
 	-M|--mpi)
 	    MPI_FLAVOURS=$2
-	    shift
+	    return 2
 	    ;;
 	--help|-h)
 	    usage $0
