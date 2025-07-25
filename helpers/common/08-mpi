@@ -82,7 +82,7 @@ mpi_get_flavors()
     fi
     case $suse_version in
 	12.3|12.4|12.5)
-	    flavours="mpich,openmpi"
+	    flavours="mvapich2,openmpi"
 	    ;;
 	15|15.1)
 	    flavours="mvapich2,mpich,openmpi"
