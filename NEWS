@@ -15,6 +15,7 @@
   * Force install most of the HPC packages so their version ca be tracked
   * Add flag to change JUnit testsuite name
   * Rework MPI flavor handling to allow per SUSE version flags
+  * mvapich3 support for Tumbleweed >= 2025
 - hpc-testing 0.7.0
   * rxe-test: fix typo in test name
   * common: fix bad egrep '*'

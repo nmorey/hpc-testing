@@ -113,8 +113,16 @@ openmpi4--btl=self--pml=ucx"
 openmpi4--btl=ofi--pml=^ucx,\
 openmpi4--btl=self--pml=ucx"
 	    ;;
-	16.0|2025*)
+	16.0)
 	    flavours="mvapich2,mpich,openmpi4,openmpi5,\
+openmpi4--btl=ofi--pml=^ucx,\
+openmpi4--btl=self--pml=ucx,\
+openmpi5--btl=ofi--pml=cm,\
+openmpi5--btl=uct--pml=ucx"
+            ;;
+        2025*)
+	    flavours="mvapich2,mpich,openmpi4,openmpi5,\
+mvapich3-ofi,mvapich3-ucx,\
 openmpi4--btl=ofi--pml=^ucx,\
 openmpi4--btl=self--pml=ucx,\
 openmpi5--btl=ofi--pml=cm,\
